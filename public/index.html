@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Wingman">
+  <title>Wingman — AI Dating Coach</title>
+  <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%230a0a0f' width='192' height='192'/><text x='50%' y='50%' font-size='100' fill='%23c8a97e' text-anchor='middle' dominant-baseline='central' font-family='serif' font-weight='bold'>W</text></svg>">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%230a0a0f' width='192' height='192' rx='45'/><text x='50%' y='50%' font-size='100' fill='%23c8a97e' text-anchor='middle' dominant-baseline='central' font-family='serif' font-weight='bold'>W</text></svg>">
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;700&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      font-family: 'DM Sans', sans-serif;
+      background-color: #0a0a0f;
+      color: #ffffff;
+      overflow: hidden;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .screen {
+      display: none;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      padding: max(env(safe-area-inset-top), 20px) max(env(safe-area-inset-right), 20px) max(env(safe-area-inset-bottom), 20px) max(env(safe-area-inset-left), 20px);
+      overflow-y: auto;
+      flex-direction: column;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    h1 {
+      font-family: 'Instrument Serif', serif;
+      font-size: 32px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #c8a97e;
+    }
+
+    h2 {
+      font-family: 'Instrument Serif', serif;
+      font-size: 24px;
+      margin-bottom: 16px;
+    }
+
+    button {
+      background-color: #c8a97e;
+      color: #0a0a0f;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.2s ease;
+    }
+
+    button:hover {
+      background-color: #d9b88f;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .loading {
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(200, 169, 126, 0.3);
+      border-top: 3px solid #c8a97e;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Splash Screen -->
+  <div id="screen-splash" class="screen active">
+    <div class="loading">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+  <!-- Auth Screen -->
+  <div id="screen-auth" class="screen">
+    <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+      <h1 style="text-align: center; margin-bottom: 40px;">Wingman</h1>
+      <p style="text-align: center; margin-bottom: 30px; color: #999;">AI dating message coach</p>
+      <button style="margin-bottom: 12px;" onclick="signInGoogle()">Continue with Google</button>
+      <button onclick="show('screen-home')">Demo (test mode)</button>
+    </div>
+  </div>
+
+  <!-- Home Screen -->
+  <div id="screen-home" class="screen">
+    <h1>Wingman</h1>
+    <p>Coming soon — Full app launching Q2 2025</p>
+  </div>
+
+  <!-- Loading Screen -->
+  <div id="screen-loading" class="screen">
+    <div class="loading">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+  <!-- Results Screen -->
+  <div id="screen-results" class="screen">
+    <h2>Message Options</h2>
+    <div id="results-container" style="flex: 1;"></div>
+    <button onclick="show('screen-home')">← Back</button>
+  </div>
+
+  <!-- Paywall Screen -->
+  <div id="screen-paywall" class="screen">
+    <h2>Upgrade to Wingman Pro</h2>
+    <p style="margin-bottom: 20px;">You've used your daily free messages. Upgrade for unlimited access.</p>
+    <button onclick="upgradeToSubscription()" style="margin-bottom: 12px;">Upgrade — $19/mo</button>
+    <button onclick="show('screen-home')">Cancel</button>
+  </div>
+
+  <!-- Account Screen -->
+  <div id="screen-account" class="screen">
+    <h2>Account</h2>
+    <p id="account-info"></p>
+    <button onclick="signOut()" style="margin-top: 20px;">Sign Out</button>
+    <button onclick="show('screen-home')" style="margin-top: 12px;">← Back</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+    // Configure Firebase — REPLACE WITH YOUR PROJECT CONFIG
+    const firebaseConfig = {
+      apiKey: "AIzaSyDummyKey",
+      authDomain: "wingman-app.firebaseapp.com",
+      projectId: "wingman-app",
+      storageBucket: "wingman-app.appspot.com",
+      messagingSenderId: "123456789",
+      appId: "1:123456789:web:abcdef123456"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Global state
+    window._user = null;
+    window._userData = null;
+
+    // Screen management
+    window.show = (screenId) => {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+    };
+
+    // Auth handlers
+    window.signInGoogle = async () => {
+      const provider = new GoogleAuthProvider();
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (err) {
+        alert('Sign in failed: ' + err.message);
+      }
+    };
+
+    window.signOut = async () => {
+      await auth.signOut();
+    };
+
+    // Check auth state on load
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        window._user = user;
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          window._userData = userDoc.exists() ? userDoc.data() : {};
+        } catch (err) {
+          console.error('Error loading user data:', err);
+        }
+        window.show('screen-home');
+      } else {
+        window.show('screen-auth');
+      }
+    });
+
+    // Demo functions (to be implemented with real API calls)
+    window.upgradeToSubscription = () => {
+      alert('Stripe checkout would open here');
+    };
+  </script>
+
+  <script>
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration failed:', err));
+    }
+  </script>
+</body>
+</html>
