@@ -6,10 +6,11 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Wingman">
+  <meta name="description" content="AI dating message coach">
+  <meta name="theme-color" content="#0a0a0f">
   <title>Wingman — AI Dating Coach</title>
-  <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%230a0a0f' width='192' height='192'/><text x='50%' y='50%' font-size='100' fill='%23c8a97e' text-anchor='middle' dominant-baseline='central' font-family='serif' font-weight='bold'>W</text></svg>">
   <link rel="manifest" href="/manifest.json">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%230a0a0f' width='192' height='192' rx='45'/><text x='50%' y='50%' font-size='100' fill='%23c8a97e' text-anchor='middle' dominant-baseline='central' font-family='serif' font-weight='bold'>W</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%230a0a0f' width='192' height='192' rx='45'/><text x='50%' y='50%' font-size='100' fill='%23c8a97e' text-anchor='middle' dominant-baseline='central' font-family='serif' font-weight='bold'>W</text></svg>">
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@400;500;700&display=swap');
@@ -18,12 +19,13 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
     }
 
     html, body {
       width: 100%;
       height: 100%;
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       background-color: #0a0a0f;
       color: #ffffff;
       overflow: hidden;
@@ -37,11 +39,11 @@
 
     .screen {
       display: none;
-      width: 100%;
-      height: 100%;
       position: absolute;
       top: 0;
       left: 0;
+      width: 100%;
+      height: 100%;
       padding: max(env(safe-area-inset-top), 20px) max(env(safe-area-inset-right), 20px) max(env(safe-area-inset-bottom), 20px) max(env(safe-area-inset-left), 20px);
       overflow-y: auto;
       flex-direction: column;
@@ -51,48 +53,159 @@
       display: flex;
     }
 
+    /* Typography */
     h1 {
       font-family: 'Instrument Serif', serif;
       font-size: 32px;
       font-weight: 600;
-      margin-bottom: 20px;
+      margin-bottom: 12px;
       color: #c8a97e;
+      letter-spacing: -0.5px;
     }
 
     h2 {
       font-family: 'Instrument Serif', serif;
       font-size: 24px;
+      font-weight: 600;
       margin-bottom: 16px;
+      color: #ffffff;
     }
 
-    button {
+    p, label {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #999;
+    }
+
+    p strong {
+      color: #ffffff;
+    }
+
+    /* Buttons */
+    button, .button {
       background-color: #c8a97e;
       color: #0a0a0f;
       border: none;
       padding: 12px 20px;
       border-radius: 8px;
       font-weight: 600;
-      cursor: pointer;
       font-size: 16px;
+      cursor: pointer;
       transition: all 0.2s ease;
+      font-family: 'DM Sans', sans-serif;
+      display: inline-block;
+      text-decoration: none;
+      text-align: center;
     }
 
-    button:hover {
+    button:hover, .button:hover {
       background-color: #d9b88f;
     }
 
-    button:active {
+    button:active, .button:active {
       transform: scale(0.98);
     }
 
-    .loading {
-      text-align: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
+    button.secondary {
+      background-color: transparent;
+      color: #c8a97e;
+      border: 1px solid #c8a97e;
+    }
+
+    button.secondary:hover {
+      background-color: rgba(200, 169, 126, 0.1);
+    }
+
+    /* Inputs */
+    input[type="text"], input[type="email"], input[type="password"], select, textarea {
+      width: 100%;
+      padding: 12px 16px;
+      background-color: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(200, 169, 126, 0.3);
+      border-radius: 8px;
+      color: #ffffff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      margin-bottom: 12px;
+      transition: all 0.2s ease;
+    }
+
+    input::placeholder, textarea::placeholder {
+      color: #666;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #c8a97e;
+      background-color: rgba(200, 169, 126, 0.05);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    /* File input */
+    input[type="file"] {
+      display: none;
+    }
+
+    .file-upload {
+      padding: 20px;
+      border: 2px dashed rgba(200, 169, 126, 0.5);
+      border-radius: 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-bottom: 16px;
+    }
+
+    .file-upload:hover {
+      border-color: #c8a97e;
+      background-color: rgba(200, 169, 126, 0.05);
+    }
+
+    .file-upload.active {
+      border-color: #c8a97e;
+      background-color: rgba(200, 169, 126, 0.1);
+    }
+
+    /* Messages / Bubbles */
+    .message-bubble {
+      background-color: #1a1a1f;
+      border: 1px solid #333;
+      padding: 16px;
+      border-radius: 16px;
+      margin-bottom: 12px;
+      line-height: 1.6;
+      word-break: break-word;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-left: 3px solid #c8a97e;
+    }
+
+    .message-bubble:hover {
+      background-color: #242429;
+      transform: translateY(-2px);
+    }
+
+    .message-bubble.received {
+      background-color: #c8a97e;
+      color: #0a0a0f;
+      border-left: 3px solid #d9b88f;
+    }
+
+    .message-bubble.received:hover {
+      background-color: #d9b88f;
+    }
+
+    /* Spinner */
     .spinner {
       width: 40px;
       height: 40px;
@@ -100,78 +213,296 @@
       border-top: 3px solid #c8a97e;
       border-radius: 50%;
       animation: spin 1s linear infinite;
+      margin: 0 auto;
     }
 
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
+    /* Loading state */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Badge */
+    .badge {
+      display: inline-block;
+      background-color: rgba(200, 169, 126, 0.2);
+      color: #c8a97e;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 8px;
+    }
+
+    /* Action bar */
+    .action-bar {
+      display: flex;
+      gap: 12px;
+      margin-top: auto;
+      padding-top: 20px;
+    }
+
+    .action-bar button {
+      flex: 1;
+    }
+
+    /* Stage selector */
+    .stage-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stage-btn {
+      padding: 16px;
+      background-color: rgba(200, 169, 126, 0.1);
+      border: 1px solid rgba(200, 169, 126, 0.3);
+      border-radius: 8px;
+      color: #999;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .stage-btn:hover {
+      border-color: #c8a97e;
+      color: #c8a97e;
+    }
+
+    .stage-btn.selected {
+      background-color: #c8a97e;
+      border-color: #c8a97e;
+      color: #0a0a0f;
+      font-weight: 600;
+    }
+
+    /* Info layout */
+    .info-group {
+      margin-bottom: 20px;
+    }
+
+    .info-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #c8a97e;
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .info-group p {
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* Error message */
+    .error {
+      background-color: rgba(255, 59, 48, 0.1);
+      color: #ff3b30;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      border-left: 3px solid #ff3b30;
+    }
+
+    .success {
+      background-color: rgba(76, 217, 100, 0.1);
+      color: #4cd964;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      border-left: 3px solid #4cd964;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      h1 { font-size: 28px; }
+      h2 { font-size: 20px; }
+      button { font-size: 14px; padding: 10px 16px; }
+    }
   </style>
 </head>
 <body>
-  <!-- Splash Screen -->
+  <!-- Screen: Splash -->
   <div id="screen-splash" class="screen active">
     <div class="loading">
       <div class="spinner"></div>
+      <p>Loading Wingman...</p>
     </div>
   </div>
 
-  <!-- Auth Screen -->
+  <!-- Screen: Auth -->
   <div id="screen-auth" class="screen">
-    <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
-      <h1 style="text-align: center; margin-bottom: 40px;">Wingman</h1>
-      <p style="text-align: center; margin-bottom: 30px; color: #999;">AI dating message coach</p>
-      <button style="margin-bottom: 12px;" onclick="signInGoogle()">Continue with Google</button>
-      <button onclick="show('screen-home')">Demo (test mode)</button>
+    <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+      <h1 style="margin-bottom: 8px;">Wingman</h1>
+      <p style="margin-bottom: 40px; color: #666;">AI dating message coach</p>
+      
+      <div style="width: 100%; max-width: 320px;">
+        <button style="width: 100%; margin-bottom: 12px;" onclick="signInGoogle()">
+          Continue with Google
+        </button>
+        <button class="secondary" style="width: 100%; margin-bottom: 20px;" onclick="toggleAuthForm()">
+          Email / Password
+        </button>
+
+        <div id="auth-form" style="display: none;">
+          <input type="email" id="auth-email" placeholder="Email">
+          <input type="password" id="auth-password" placeholder="Password">
+          <button style="width: 100%; margin-bottom: 12px;" onclick="signInEmail()">Sign In</button>
+          <button class="secondary" style="width: 100%;" onclick="signUpEmail()">Create Account</button>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Home Screen -->
+  <!-- Screen: Home (Main App) -->
   <div id="screen-home" class="screen">
-    <h1>Wingman</h1>
-    <p>Coming soon — Full app launching Q2 2025</p>
+    <div style="flex: 1; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <h1>Wingman</h1>
+        <button class="secondary" style="padding: 8px 12px; font-size: 14px;" onclick="show('screen-account')">
+          ⚙️
+        </button>
+      </div>
+
+      <div id="home-free-badge" class="badge" style="margin-bottom: 20px;"></div>
+
+      <!-- Stage selector -->
+      <label style="display: block; margin-bottom: 12px; color: #c8a97e; font-weight: 600; font-size: 12px; text-transform: uppercase;">Pick a stage</label>
+      <div class="stage-grid">
+        <button class="stage-btn" onclick="selectStage('interest')">Interest</button>
+        <button class="stage-btn" onclick="selectStage('attraction')">Attraction</button>
+        <button class="stage-btn" onclick="selectStage('rapport')">Rapport</button>
+        <button class="stage-btn" onclick="selectStage('desire')">Desire</button>
+        <button class="stage-btn" onclick="selectStage('momentum')">Momentum</button>
+        <button class="stage-btn" onclick="selectStage('close')">Close</button>
+      </div>
+
+      <!-- Screenshot upload -->
+      <label style="display: block; margin-bottom: 12px; color: #c8a97e; font-weight: 600; font-size: 12px; text-transform: uppercase;">Screenshot (optional)</label>
+      <div class="file-upload" id="file-upload" onclick="document.getElementById('screenshot-input').click()">
+        <p id="file-label" style="margin: 0;">📸 Tap to upload</p>
+      </div>
+      <input type="file" id="screenshot-input" accept="image/*" onchange="handleFileUpload(event)">
+
+      <!-- Message input -->
+      <label style="display: block; margin-bottom: 12px; color: #c8a97e; font-weight: 600; font-size: 12px; text-transform: uppercase;">What do you want to say?</label>
+      <textarea id="message-input" placeholder="Paste the conversation or describe what you want to communicate..."></textarea>
+
+      <div id="home-error" class="error" style="display: none; margin-bottom: 20px;"></div>
+
+      <button style="width: 100%; margin-bottom: 12px;" onclick="generateMessages()">
+        Get My Messages
+      </button>
+      <button class="secondary" style="width: 100%;" onclick="clearForm()">Clear</button>
+    </div>
   </div>
 
-  <!-- Loading Screen -->
+  <!-- Screen: Loading -->
   <div id="screen-loading" class="screen">
     <div class="loading">
       <div class="spinner"></div>
+      <p>Generating your messages...</p>
     </div>
   </div>
 
-  <!-- Results Screen -->
+  <!-- Screen: Results -->
   <div id="screen-results" class="screen">
-    <h2>Message Options</h2>
-    <div id="results-container" style="flex: 1;"></div>
-    <button onclick="show('screen-home')">← Back</button>
+    <h2 style="margin-bottom: 20px;">💬 Your Messages</h2>
+    <div id="results-container" style="flex: 1; overflow-y: auto; margin-bottom: 20px;">
+      <!-- Results will be inserted here -->
+    </div>
+    <div class="action-bar">
+      <button onclick="show('screen-home')">← Back</button>
+    </div>
   </div>
 
-  <!-- Paywall Screen -->
+  <!-- Screen: Paywall -->
   <div id="screen-paywall" class="screen">
-    <h2>Upgrade to Wingman Pro</h2>
-    <p style="margin-bottom: 20px;">You've used your daily free messages. Upgrade for unlimited access.</p>
-    <button onclick="upgradeToSubscription()" style="margin-bottom: 12px;">Upgrade — $19/mo</button>
-    <button onclick="show('screen-home')">Cancel</button>
+    <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+      <h2 style="text-align: center; margin-bottom: 12px;">✨ Daily Limit Reached</h2>
+      <p style="text-align: center; margin-bottom: 32px; color: #999;">
+        You've used your 5 free messages today. Upgrade to Wingman Pro for unlimited coaching.
+      </p>
+
+      <div style="background-color: rgba(200, 169, 126, 0.1); padding: 20px; border-radius: 12px; margin-bottom: 24px; border: 1px solid rgba(200, 169, 126, 0.3);">
+        <p style="font-size: 12px; text-transform: uppercase; color: #c8a97e; margin-bottom: 8px;">Wingman Pro</p>
+        <p style="font-size: 32px; color: #ffffff; margin-bottom: 8px;"><strong>$19</strong><span style="font-size: 16px; color: #999;">/month</span></p>
+        <p style="color: #999; font-size: 14px; margin-bottom: 16px;">Unlimited message generation • Advanced AI coaching</p>
+      </div>
+
+      <button style="width: 100%; margin-bottom: 12px;" onclick="upgradeToSubscription()">
+        Upgrade to Pro
+      </button>
+      <button class="secondary" style="width: 100%;" onclick="show('screen-home')">Maybe Later</button>
+    </div>
   </div>
 
-  <!-- Account Screen -->
+  <!-- Screen: Account -->
   <div id="screen-account" class="screen">
-    <h2>Account</h2>
-    <p id="account-info"></p>
-    <button onclick="signOut()" style="margin-top: 20px;">Sign Out</button>
-    <button onclick="show('screen-home')" style="margin-top: 12px;">← Back</button>
+    <div style="flex: 1; overflow-y: auto;">
+      <h2 style="margin-bottom: 24px;">Account</h2>
+
+      <div class="info-group">
+        <label>Email</label>
+        <p id="account-email">—</p>
+      </div>
+
+      <div class="info-group">
+        <label>Subscription Status</label>
+        <p id="account-status">—</p>
+      </div>
+
+      <div class="info-group">
+        <label>Daily Uses</label>
+        <p id="account-usage">—</p>
+      </div>
+
+      <div id="account-info-section" style="margin-top: 32px; margin-bottom: 20px;"></div>
+
+      <div class="action-bar" style="flex-direction: column; gap: 8px;">
+        <button id="portal-btn" style="width: 100%; display: none;" onclick="openBillingPortal()">
+          Manage Subscription
+        </button>
+        <button class="secondary" style="width: 100%;" onclick="signOut()">Sign Out</button>
+        <button class="secondary" style="width: 100%;" onclick="show('screen-home')">← Back</button>
+      </div>
+    </div>
   </div>
 
+  <!-- Scripts -->
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import { 
+      getAuth, 
+      GoogleAuthProvider, 
+      signInWithPopup,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      onAuthStateChanged,
+      signOut as firebaseSignOut 
+    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
     import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-    // Configure Firebase — REPLACE WITH YOUR PROJECT CONFIG
+    // Firebase Config - UPDATE WITH YOUR PROJECT CONFIG
     const firebaseConfig = {
       apiKey: "AIzaSyDummyKey",
-      authDomain: "wingman-app.firebaseapp.com",
-      projectId: "wingman-app",
-      storageBucket: "wingman-app.appspot.com",
+      authDomain: "wingman-pwa.firebaseapp.com",
+      projectId: "wingman-pwa",
+      storageBucket: "wingman-pwa.appspot.com",
       messagingSenderId: "123456789",
       appId: "1:123456789:web:abcdef123456"
     };
@@ -183,28 +514,265 @@
     // Global state
     window._user = null;
     window._userData = null;
+    window._selectedStage = null;
+    window._screenshotBase64 = null;
+    const CLOUD_FUNCTION_URL = 'https://us-central1-wingman-pwa.cloudfunctions.net';
 
     // Screen management
     window.show = (screenId) => {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(screenId).classList.add('active');
+      if (screenId === 'screen-account') {
+        updateAccountScreen();
+      }
     };
 
     // Auth handlers
     window.signInGoogle = async () => {
-      const provider = new GoogleAuthProvider();
       try {
+        const provider = new GoogleAuthProvider();
         await signInWithPopup(auth, provider);
       } catch (err) {
         alert('Sign in failed: ' + err.message);
       }
     };
 
-    window.signOut = async () => {
-      await auth.signOut();
+    window.toggleAuthForm = () => {
+      const form = document.getElementById('auth-form');
+      form.style.display = form.style.display === 'none' ? 'block' : 'none';
     };
 
-    // Check auth state on load
+    window.signInEmail = async () => {
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+      if (!email || !password) {
+        alert('Please enter email and password');
+        return;
+      }
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        alert('Sign in failed: ' + err.message);
+      }
+    };
+
+    window.signUpEmail = async () => {
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+      if (!email || !password) {
+        alert('Please enter email and password');
+        return;
+      }
+      try {
+        await createUserWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        alert('Sign up failed: ' + err.message);
+      }
+    };
+
+    window.signOut = async () => {
+      try {
+        await firebaseSignOut(auth);
+      } catch (err) {
+        alert('Sign out failed: ' + err.message);
+      }
+    };
+
+    // Stage selection
+    window.selectStage = (stage) => {
+      window._selectedStage = stage;
+      document.querySelectorAll('.stage-btn').forEach(btn => btn.classList.remove('selected'));
+      event.target.classList.add('selected');
+    };
+
+    // File upload
+    window.handleFileUpload = (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        window._screenshotBase64 = e.target.result;
+        document.getElementById('file-upload').classList.add('active');
+        document.getElementById('file-label').textContent = '✓ Screenshot uploaded';
+      };
+      reader.readAsDataURL(file);
+    };
+
+    // Generate messages
+    window.generateMessages = async () => {
+      if (!window._selectedStage) {
+        document.getElementById('home-error').textContent = 'Please select a stage';
+        document.getElementById('home-error').style.display = 'block';
+        return;
+      }
+
+      const message = document.getElementById('message-input').value.trim();
+      if (!message) {
+        document.getElementById('home-error').textContent = 'Please enter your message or context';
+        document.getElementById('home-error').style.display = 'block';
+        return;
+      }
+
+      document.getElementById('home-error').style.display = 'none';
+      window.show('screen-loading');
+
+      try {
+        const token = await auth.currentUser.getIdToken();
+        const userPrompt = `You are a dating message coach. The user is at the "${window._selectedStage}" stage of a conversation on a dating app. ${window._screenshotBase64 ? 'They provided a screenshot of their conversation.' : ''} They want help with: "${message}"\n\nProvide exactly 3 different message options that are compelling, authentic, and match the conversation stage. Format as a JSON array with "message" field.`;
+
+        const response = await fetch(`${CLOUD_FUNCTION_URL}/claude`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            messages: [{ role: 'user', content: userPrompt }]
+          })
+        });
+
+        if (response.status === 402) {
+          window.show('screen-paywall');
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error('API request failed');
+        }
+
+        const data = await response.json();
+        displayResults(data);
+        window.show('screen-results');
+        updateHomeScreen();
+      } catch (err) {
+        alert('Error generating messages: ' + err.message);
+        window.show('screen-home');
+      }
+    };
+
+    window.displayResults = (data) => {
+      const container = document.getElementById('results-container');
+      container.innerHTML = '';
+      
+      try {
+        const content = data.content[0].text;
+        const messages = JSON.parse(content).map(item => item.message || item);
+        
+        messages.forEach((msg, i) => {
+          const bubble = document.createElement('div');
+          bubble.className = 'message-bubble';
+          bubble.innerHTML = msg;
+          bubble.onclick = () => {
+            navigator.clipboard.writeText(msg);
+            bubble.style.background = 'rgba(76, 217, 100, 0.1)';
+            setTimeout(() => { bubble.style.background = ''; }, 1000);
+          };
+          container.appendChild(bubble);
+        });
+      } catch (e) {
+        const bubble = document.createElement('div');
+        bubble.className = 'message-bubble';
+        bubble.innerHTML = data.content[0].text;
+        container.appendChild(bubble);
+      }
+    };
+
+    window.clearForm = () => {
+      document.getElementById('message-input').value = '';
+      document.getElementById('screenshot-input').value = '';
+      document.getElementById('file-upload').classList.remove('active');
+      document.getElementById('file-label').textContent = '📸 Tap to upload';
+      window._selectedStage = null;
+      window._screenshotBase64 = null;
+      document.querySelectorAll('.stage-btn').forEach(btn => btn.classList.remove('selected'));
+      document.getElementById('home-error').style.display = 'none';
+    };
+
+    window.upgradeToSubscription = async () => {
+      try {
+        const token = await auth.currentUser.getIdToken();
+        const response = await fetch(`${CLOUD_FUNCTION_URL}/createCheckoutSession`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) throw new Error('Failed to create checkout session');
+        const { url } = await response.json();
+        window.location.href = url;
+      } catch (err) {
+        alert('Upgrade failed: ' + err.message);
+      }
+    };
+
+    window.openBillingPortal = async () => {
+      try {
+        const token = await auth.currentUser.getIdToken();
+        const response = await fetch(`${CLOUD_FUNCTION_URL}/createPortalSession`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) throw new Error('Failed to create portal session');
+        const { url } = await response.json();
+        window.location.href = url;
+      } catch (err) {
+        alert('Failed to open billing portal: ' + err.message);
+      }
+    };
+
+    window.updateHomeScreen = async () => {
+      if (!window._user) return;
+      try {
+        const userDoc = await getDoc(doc(db, 'users', window._user.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          const today = new Date().toISOString().split('T')[0];
+          const todayCount = data.usage?.date === today ? (data.usage?.count || 0) : 0;
+          const remaining = 5 - todayCount;
+          const badge = document.getElementById('home-free-badge');
+          if (data.subscription?.status === 'active') {
+            badge.textContent = '✨ Pro Member';
+            badge.style.background = 'rgba(200, 169, 126, 0.2)';
+          } else {
+            badge.textContent = `📊 ${remaining} uses left today`;
+          }
+        }
+      } catch (err) {
+        console.error('Error updating home:', err);
+      }
+    };
+
+    window.updateAccountScreen = async () => {
+      if (!window._user) return;
+      try {
+        document.getElementById('account-email').textContent = window._user.email || '—';
+        const userDoc = await getDoc(doc(db, 'users', window._user.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          const sub = data.subscription || {};
+          document.getElementById('account-status').textContent = sub.status === 'active' ? '✅ Pro' : '📦 Free';
+          const today = new Date().toISOString().split('T')[0];
+          const todayCount = data.usage?.date === today ? (data.usage?.count || 0) : 0;
+          document.getElementById('account-usage').textContent = `${todayCount} / 5 used today`;
+          const portalBtn = document.getElementById('portal-btn');
+          if (sub.status === 'active') {
+            portalBtn.style.display = 'block';
+          } else {
+            portalBtn.style.display = 'none';
+          }
+        }
+      } catch (err) {
+        console.error('Error updating account:', err);
+      }
+    };
+
+    // Auth state listener
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         window._user = user;
@@ -214,16 +782,14 @@
         } catch (err) {
           console.error('Error loading user data:', err);
         }
+        updateHomeScreen();
         window.show('screen-home');
       } else {
+        window._user = null;
+        window._userData = null;
         window.show('screen-auth');
       }
     });
-
-    // Demo functions (to be implemented with real API calls)
-    window.upgradeToSubscription = () => {
-      alert('Stripe checkout would open here');
-    };
   </script>
 
   <script>
