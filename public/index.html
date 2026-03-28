@@ -410,10 +410,6 @@
       </div>
       <input type="file" id="screenshot-input" accept="image/*" onchange="handleFileUpload(event)">
 
-      <!-- Conversation history -->
-      <label style="display: block; margin-bottom: 12px; color: #c8a97e; font-weight: 600; font-size: 12px; text-transform: uppercase;">Previous Conversation (optional)</label>
-      <textarea id="conversation-history" placeholder="Paste the conversation so far for better context. Include both messages and her responses."></textarea>
-
       <!-- Message input -->
       <label style="display: block; margin-bottom: 12px; color: #c8a97e; font-weight: 600; font-size: 12px; text-transform: uppercase;">What do you want to say?</label>
       <textarea id="message-input" placeholder="Paste the conversation or describe what you want to communicate..."></textarea>
@@ -676,9 +672,6 @@
           'Close': 'Finalize logistics and build confidence. Be direct about meeting, remove barriers, show genuine interest in the real person. This is about follow-through and authentic intention.'
         };
 
-        const conversationHistory = document.getElementById('conversation-history').value.trim();
-        const conversationContext = conversationHistory ? `\n\nPREVIOUS CONVERSATION:\n${conversationHistory}\n` : '';
-
         const userPrompt = `You are a conversational strategist helping someone communicate with calm confidence, emotional intelligence, and subtle playful tension on dating apps and in early romantic conversations.
 
 Communication style to maintain: observational, grounded, warm, lightly playful, quietly decisive. No try-hard energy, no interview-style questions, no validation seeking, no long philosophical texts.
@@ -854,7 +847,6 @@ Return EXACTLY this JSON structure:
 
     window.clearForm = () => {
       console.log('[Wingman] Clearing form');
-      document.getElementById('conversation-history').value = '';
       document.getElementById('message-input').value = '';
       document.getElementById('screenshot-input').value = '';
       document.getElementById('file-upload').classList.remove('active');
