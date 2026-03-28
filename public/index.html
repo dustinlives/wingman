@@ -937,7 +937,11 @@ Communication style to maintain: observational, grounded, warm, lightly playful,
 
 STAGE CONTEXT: The user is at the "${window._selectedStage}" stage. ${stageContext[window._selectedStage] || ''}
 
-${window._screenshotBase64 ? 'They provided a screenshot of their conversation - analyze the tone, energy, and flow carefully.' : 'Use the context they\'re providing to understand the conversation dynamic.'}
+CONVERSATION CONTEXT:
+${window._screenshotBase64 ? `A screenshot of the conversation has been provided below. In this screenshot:
+- Messages on the RIGHT side are from the USER (the person asking for help)
+- Messages on the LEFT side are from the person they're messaging back to
+- You're generating a response that the USER should send next (which would appear on the RIGHT)` : `The user is describing the conversation context directly. Generate a response for what THEY should say.`}
 
 WHAT THEY WANT TO SAY: ${message}
 

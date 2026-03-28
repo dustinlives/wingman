@@ -35,6 +35,7 @@
       return;
     }
 
+    // Show banner for all users (authenticated or not)
     const banner = document.getElementById(BANNER_ID);
     if (!banner) return;
 
@@ -139,10 +140,10 @@
       hideBanner();
     });
 
-    // Show banner after 30 seconds, only on supported devices
+    // Show banner immediately (testing) or after 30 seconds in production
     setTimeout(() => {
       showBanner(isIOS());
-    }, 30000);
+    }, 5000);
   }
 
   // Start when DOM is ready
