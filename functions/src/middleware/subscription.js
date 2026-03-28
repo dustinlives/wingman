@@ -30,11 +30,10 @@ async function checkUsage(uid, res) {
 
     const sub = data.subscription || {};
 
-    // Paid subscribers: always allow
-    if (sub.status === 'active') {
-      // Check subscription hasn't lapsed
-      const periodEnd = sub.currentPeriodEnd?.toDate?.() || new Date(sub.currentPeriodEnd);
-      if (periodEnd > new Date()) return true;
+    // Paid subscribers: always allow (check stripeSubscriptionId or subscription status)
+    if (data.stripeSubscriptionId || (sub.status === 'active' && sub.currentPeriodEnd)) {
+      console.log('Paid subscriber access granted:', email);
+      return true;
     }
 
     // Free users: check daily limit
