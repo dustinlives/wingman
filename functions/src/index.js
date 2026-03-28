@@ -5,12 +5,14 @@ admin.initializeApp();
 const { claude } = require('./claude');
 const { createCheckoutSession, createPortalSession, stripeWebhook } = require('./stripe');
 const { createUser } = require('./auth-triggers');
+const { resetUsage } = require('./admin/reset-usage');
 
 // HTTP functions
 exports.claude = claude;
 exports.createCheckoutSession = createCheckoutSession;
 exports.createPortalSession = createPortalSession;
 exports.stripeWebhook = stripeWebhook;
+exports.resetUsage = resetUsage;
 
 // Auth triggers
 exports.createUser = createUser;
