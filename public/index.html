@@ -758,26 +758,32 @@ Return EXACTLY this JSON structure:
         }
 
         let content = data.content[0].text;
+        console.log('[Wingman] Raw Claude response:', content);
         console.log('[Wingman] Raw Claude response length:', content.length);
         
         // Clean markdown code blocks
         content = content.replace(/^```[\w]*\n?/gm, '').replace(/```$/gm, '').trim();
+        console.log('[Wingman] After cleanup:', content);
         
         // Extract JSON object
         let parsed = null;
         const jsonMatch = content.match(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/);
+        console.log('[Wingman] JSON match result:', jsonMatch);
         
         if (jsonMatch) {
+          console.log('[Wingman] Attempting to parse:', jsonMatch[0]);
           try {
             parsed = JSON.parse(jsonMatch[0]);
-            console.log('[Wingman] Successfully parsed JSON');
+            console.log('[Wingman] Successfully parsed JSON:', parsed);
           } catch (parseErr) {
-            console.log('[Wingman] JSON parse failed');
+            console.log('[Wingman] JSON parse failed:', parseErr.message);
+            console.log('[Wingman] Failed to parse:', jsonMatch[0]);
           }
         }
         
         // Validate we have options
         if (!parsed || typeof parsed !== 'object') {
+          console.log('[Wingman] Invalid parsed:', parsed);
           throw new Error('Failed to extract valid JSON');
         }
 
