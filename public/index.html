@@ -715,7 +715,29 @@ Return EXACTLY this JSON structure:
 
           console.log('[Wingman] Attempt ' + attempt + '/' + maxRetries);
           console.log('[Wingman] Prompt stage:', window._selectedStage);
+          console.log('[Wingman] Screenshot included:', !!window._screenshotBase64);
           console.log('[Wingman] Calling /api/claude with token');
+          
+          // Build message content with screenshot if available
+          let messageContent = userPrompt;
+          if (window._screenshotBase64) {
+            // Send screenshot to Claude for analysis
+            messageContent = [
+              {
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: 'image/png',
+                  data: window._screenshotBase64.split(',')[1] // Remove data:image/png;base64, prefix
+                }
+              },
+              {
+                type: 'text',
+                text: userPrompt
+              }
+            ];
+            console.log('[Wingman] Message includes image content');
+          }
           
           // Create abort controller for timeout (90 seconds for slow mobile)
           const controller = new AbortController();
@@ -728,7 +750,7 @@ Return EXACTLY this JSON structure:
               'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
-              messages: [{ role: 'user', content: userPrompt }]
+              messages: [{ role: 'user', content: messageContent }]
             }),
             signal: controller.signal
           });
