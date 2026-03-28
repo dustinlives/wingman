@@ -669,7 +669,16 @@
       
       try {
         const content = data.content[0].text;
-        const messages = JSON.parse(content).map(item => item.message || item);
+        console.log('[Wingman] Raw content:', content);
+        
+        // Try to extract JSON array from response
+        const jsonMatch = content.match(/\[[\s\S]*\]/);
+        if (!jsonMatch) {
+          throw new Error('No JSON array found in response');
+        }
+        
+        const messages = JSON.parse(jsonMatch[0]).map(item => item.message || item.text || JSON.stringify(item));
+        console.log('[Wingman] Parsed messages:', messages);
         
         messages.forEach((msg, i) => {
           const bubble = document.createElement('div');
@@ -683,6 +692,7 @@
           container.appendChild(bubble);
         });
       } catch (e) {
+        console.error('[Wingman] Parse error, showing raw content:', e);
         const bubble = document.createElement('div');
         bubble.className = 'message-bubble';
         bubble.innerHTML = data.content[0].text;
