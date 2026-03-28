@@ -56,8 +56,8 @@ const createCheckoutSession = functions.https.onRequest(async (req, res) => {
       payment_method_types: ['card'],
       mode: 'subscription',
       line_items: [{ price: functions.config().stripe.price_id, quantity: 1 }],
-      success_url: `https://wingman-pwa.firebaseapp.com/?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `https://wingman-pwa.firebaseapp.com/?checkout=canceled`,
+      success_url: `https://wingman-pwa.web.app/?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `https://wingman-pwa.web.app/?checkout=canceled`,
       subscription_data: {
         metadata: { firebaseUid: uid },
       },
@@ -108,7 +108,7 @@ const createPortalSession = functions.https.onRequest(async (req, res) => {
 
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: 'https://wingman-pwa.firebaseapp.com/',
+      return_url: 'https://wingman-pwa.web.app/',
     });
 
     return res.json({ url: session.url });
