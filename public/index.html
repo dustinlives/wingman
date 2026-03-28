@@ -754,38 +754,89 @@ Return EXACTLY this JSON structure:
       
       try {
         let content = data.content[0].text;
-        console.log('[Wingman] Raw Claude response:', content.substring(0, 200) + '...');
+        console.log('[Wingman] Raw Claude response:', content.substring(0, 300) + '...');
         
         // Clean up markdown code blocks and extra whitespace
         content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
         console.log('[Wingman] Cleaned response:', content.substring(0, 100) + '...');
         
-        // Try to extract JSON object from response
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-          console.warn('[Wingman] No JSON object found in response');
-          throw new Error('No JSON object found in response');
+        // Try to extract JSON object or array from response
+        let parsed = null;
+        let isArray = false;
+        
+        // Try JSON object first
+        const objMatch = content.match(/\{[\s\S]*\}/);
+        if (objMatch) {
+          try {
+            parsed = JSON.parse(objMatch[0]);
+            console.log('[Wingman] Successfully parsed JSON object');
+          } catch (e) {
+            console.log('[Wingman] JSON object parse failed, trying array...');
+          }
         }
         
-        // Parse and validate JSON
-        let parsed;
-        try {
-          parsed = JSON.parse(jsonMatch[0]);
-          console.log('[Wingman] Successfully parsed JSON response object');
-        } catch (parseErr) {
-          console.error('[Wingman] JSON parse error:', parseErr.message);
-          console.log('[Wingman] Failed to parse:', jsonMatch[0].substring(0, 150));
-          throw new Error('Invalid JSON structure');
+        // If object parse failed, try array
+        if (!parsed) {
+          const arrMatch = content.match(/\[[\s\S]*\]/);
+          if (arrMatch) {
+            try {
+              parsed = JSON.parse(arrMatch[0]);
+              isArray = true;
+              console.log('[Wingman] Successfully parsed JSON array with', parsed.length, 'items');
+            } catch (e) {
+              console.log('[Wingman] JSON array parse failed');
+            }
+          }
         }
         
-        // Validate required keys exist
-        if (!parsed.A || !parsed.B || !parsed.C || !parsed.D) {
-          console.error('[Wingman] Missing required options A, B, C, or D');
-          throw new Error('Missing required response options');
+        // If still no JSON, try to intelligently extract text lines starting with A, B, C, D
+        if (!parsed) {
+          console.log('[Wingman] No JSON found, attempting intelligent text extraction...');
+          parsed = {};
+          let currentKey = null;
+          
+          const lines = content.split('\n');
+          lines.forEach(line => {
+            // Look for lines starting with "A —", "A -", "A.", "A)", etc.
+            const match = line.match(/^\s*([A-D])\s*[\u2014\-.\):\s]+\s*(.+)$/i);
+            if (match) {
+              currentKey = match[1].toUpperCase();
+              parsed[currentKey] = match[2].trim();
+              console.log(`[Wingman] Found option ${currentKey}`);\n            } else if (currentKey && line.trim() && !line.match(/^[A-D]\s*[\u2014\-.\):\s]/)) {
+              // Append continuation to current option (multi-line)
+              if (parsed[currentKey]) {
+                parsed[currentKey] += ' ' + line.trim();
+              }
+            }
+          });
+          
+          if (Object.keys(parsed).length === 0) {
+            throw new Error('Could not parse response in any format');\n          }
+          console.log('[Wingman] Extracted text options:', Object.keys(parsed));
         }
+        
+        // If we got an array, convert to object with A/B/C/D keys
+        if (isArray && Array.isArray(parsed)) {
+          const optionKeys = ['A', 'B', 'C', 'D'];
+          const result = {};
+          parsed.forEach((item, i) => {
+            const key = optionKeys[i];
+            if (key) {
+              result[key] = typeof item === 'string' ? item : (item.message || item.text || item.option || JSON.stringify(item));
+            }
+          });
+          parsed = result;
+          console.log('[Wingman] Converted array to object with keys:', Object.keys(parsed));
+        }
+        
+        // Ensure we have A/B/C/D options (allowing subset)
+        const options = ['A', 'B', 'C', 'D'];
+        const hasOptions = options.filter(k => parsed[k] && parsed[k].trim());
+        if (hasOptions.length === 0) {
+          throw new Error('No response options (A/B/C/D) found in any format');\n        }
+        console.log('[Wingman] Found', hasOptions.length, 'options:', hasOptions.join(', '));
         
         // Display A, B, C, D options
-        const options = ['A', 'B', 'C', 'D'];
         const optionLabels = {
           'A': 'Most Natural',
           'B': 'Slightly Playful',
@@ -794,13 +845,12 @@ Return EXACTLY this JSON structure:
         };
         
         options.forEach(opt => {
-          if (parsed[opt]) {
+          if (parsed[opt] && parsed[opt].trim()) {
             const bubble = document.createElement('div');
             bubble.className = 'message-bubble';
             bubble.innerHTML = `<strong>${opt} — ${optionLabels[opt]}</strong><br>${parsed[opt]}`;
             bubble.onclick = () => {
-              console.log(`[Wingman] Copied option ${opt} to clipboard`);
-              navigator.clipboard.writeText(parsed[opt]);
+              console.log(`[Wingman] Copied option ${opt} to clipboard`);\n              navigator.clipboard.writeText(parsed[opt]);
               bubble.style.background = 'rgba(76, 217, 100, 0.1)';
               setTimeout(() => { bubble.style.background = ''; }, 1000);
             };
