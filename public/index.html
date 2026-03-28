@@ -360,15 +360,102 @@
       border-left: 3px solid #4cd964;
     }
 
+    /* Install Prompt Banner */
+    #install-prompt-banner {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: #1a1a1a;
+      border-top: 1px solid #c9a84c;
+      padding: 16px;
+      padding-bottom: calc(16px + env(safe-area-inset-bottom));
+      z-index: 9999;
+      display: none;
+      opacity: 0;
+      transform: translateY(100%);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    #install-prompt-banner.visible {
+      display: flex;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .install-prompt-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      max-width: 100%;
+    }
+
+    .install-action-btn {
+      background-color: #c9a84c;
+      color: #0a0a0f;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .install-action-btn:hover {
+      background-color: #d9b88f;
+    }
+
+    .install-action-btn:active {
+      transform: scale(0.98);
+    }
+
+    .install-dismiss-btn {
+      background: none;
+      border: none;
+      color: #c9a84c;
+      opacity: 0.6;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 4px 8px;
+      transition: opacity 0.2s ease;
+    }
+
+    .install-dismiss-btn:hover {
+      opacity: 1;
+    }
+
     /* Responsive */
     @media (max-width: 480px) {
       h1 { font-size: 28px; }
       h2 { font-size: 20px; }
       button { font-size: 14px; padding: 10px 16px; }
+
+      #install-prompt-banner {
+        padding: 12px;
+        padding-bottom: calc(12px + env(safe-area-inset-bottom));
+      }
+
+      .install-prompt-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .install-action-btn {
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
+  <!-- PWA Install Prompt Banner -->
+  <div id="install-prompt-banner">
+    <div class="install-prompt-content"></div>
+  </div>
+
   <!-- Screen: Splash -->
   <div id="screen-splash" class="screen active">
     <div class="loading">
@@ -1261,5 +1348,8 @@ Return EXACTLY this JSON structure:
         });
     }
   </script>
+
+  <!-- PWA Install Prompt -->
+  <script src="/installPrompt.js"></script>
 </body>
 </html>
