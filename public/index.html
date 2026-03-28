@@ -710,7 +710,6 @@ Return EXACTLY this JSON structure:
 }`;
 
         console.log('[Wingman] Prompt stage:', window._selectedStage);
-        console.log('[Wingman] Conversation history included:', !!conversationHistory);
         console.log('[Wingman] Calling /api/claude with token');
         const response = await fetch(`/api/claude`, {
           method: 'POST',
