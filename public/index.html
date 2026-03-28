@@ -490,9 +490,101 @@
         <button id="portal-btn" style="width: 100%; display: none;" onclick="openBillingPortal()">
           Manage Subscription
         </button>
+        <button class="secondary" style="width: 100%; font-size: 14px;" onclick="show('screen-privacy')">Privacy Policy</button>
+        <button class="secondary" style="width: 100%; font-size: 14px;" onclick="show('screen-terms')">Terms of Service</button>
         <button class="secondary" style="width: 100%;" onclick="signOut()">Sign Out</button>
         <button class="secondary" style="width: 100%;" onclick="show('screen-home')">← Back</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Screen: Privacy Policy -->
+  <div id="screen-privacy" class="screen">
+    <div style="flex: 1; overflow-y: auto; padding-bottom: 20px;">
+      <h2 style="margin-bottom: 20px;">Privacy Policy</h2>
+      <div style="color: #999; line-height: 1.8; font-size: 14px;">
+        <h3 style="color: #c8a97e; margin-top: 16px; margin-bottom: 8px; font-size: 16px;">1. Information We Collect</h3>
+        <p>• <strong>Account Information:</strong> Email and display name when you sign up</p>
+        <p>• <strong>Screenshots:</strong> Optional images you upload for analysis (sent to Anthropic Claude API)</p>
+        <p>• <strong>Usage Data:</strong> Number of messages generated, subscription status</p>
+        <p>• <strong>Device Data:</strong> Device type, iOS version, for technical support</p>
+
+        <h3 style="color: #c8a97e; margin-top: 16px; margin-bottom: 8px; font-size: 16px;">2. How We Use Your Data</h3>
+        <p>• <strong>Screenshots:</strong> Sent to Anthropic for AI analysis to generate coaching messages. Never stored by Wingman.</p>
+        <p>• <strong>Messages:</strong> Stored in your account history for your reference</p>
+        <p>• <strong>Subscription Data:</strong> Used to enforce free tier limits and manage billing</p>
+        <p>• <strong>Analytics:</strong> Aggregated metrics to improve the app (not personally identifying)</p>
+
+        <h3 style="color: #c8a97e; margin-top: 16px; margin-bottom: 8px; font-size: 16px;">3. Data Retention</h3>
+        <p>• Account data: Retained until you delete your account</p>
+        <p>• Screenshots: Not stored by Wingman (sent directly to Anthropic)</p>
+        <p>• Conversation history: Retained indefinitely for your account</p>
+
+        <h3 style="color: #c8a97e; margin-top: 16px; margin-bottom: 8px; font-size: 16px;">4. Third Parties</h3>
+        <p>• <strong>Anthropic:</strong> Processes screenshots and text for message generation (<a href="https://www.anthropic.com/privacy" style="color: #c8a97e;">Anthropic Privacy</a>)</p>
+        <p>• <strong>Stripe:</strong> Processes payments and billing (<a href="https://stripe.com/privacy" style="color: #c8a97e;">Stripe Privacy</a>)</p>
+        <p>• <strong>Firebase:</strong> Stores account data and usage logs (<a href="https://firebase.google.com/support/privacy" style="color: #c8a97e;">Firebase Privacy</a>)</p>
+
+        <h3 style="color: #c8a97e; margin-top: 16px; margin-bottom: 8px; font-size: 16px;">5. Your Rights</h3>
+        <p>• You can request your data at support@wingman.app</p>
+        <p>• You can request account deletion (all data removed within 30 days)</p>
+        <p>• You control what screenshots you share</p>
+
+        <h3 style="color: #c8a97e; margin-top: 16px; margin-bottom: 8px; font-size: 16px;">6. Security</h3>
+        <p>Your account is protected by Firebase Authentication. All communication is encrypted via HTTPS.</p>
+
+        <p style="margin-top: 24px; font-size: 12px; color: #666;">Last updated: March 28, 2026</p>
+      </div>
+    </div>
+    <div class="action-bar">
+      <button class="secondary" style="width: 100%;" onclick="show('screen-account')">← Back</button>
+    </div>
+  </div>
+
+  <!-- Screen: Terms of Service -->
+  <div id="screen-terms" class="screen">
+    <div style="flex: 1; overflow-y: auto; padding-bottom: 20px;">
+      <h2 style="margin-bottom: 20px;">Terms of Service</h2>
+      <div style="color: #999; line-height: 1.8; font-size: 14px;">
+        <h3 style="color: #c8a97e; margin-top: 16px; margin-bottom: 8px; font-size: 16px;">1. Service Description</h3>
+        <p>Wingman is an AI-powered dating message coach. We provide personalized message suggestions based on your input and optional screenshots. We are not responsible for how you use the suggestions.</p>
+
+        <h3 style="color: #c8a97e; margin-top: 16px; margin-bottom: 8px; font-size: 16px;">2. Subscription Terms</h3>
+        <p>• <strong>Free Tier:</strong> 5 messages per day</p>
+        <p>• <strong>Pro Tier:</strong> $19.00/month for unlimited messages</p>
+        <p>• <strong>Billing:</strong> Billed monthly on renewal date</p>
+        <p>• <strong>Auto-Renewal:</strong> Your subscription renews automatically unless cancelled</p>
+        <p>• <strong>Cancellation:</strong> Cancel anytime via Stripe billing portal with no penalty</p>
+
+        <h3 style="color: #c8a97e; margin-top: 16px; margin-bottom: 8px; font-size: 16px;">3. Refunds & Money-Back Guarantee</h3>
+        <p>• 7-day money-back guarantee for your first charge</p>
+        <p>• Request a refund by emailing support@wingman.app with order ID</p>
+        <p>• Refunds processed within 5-7 business days to your original card</p>
+
+        <h3 style="color: #c8a97e; margin-top: 16px; margin-bottom: 8px; font-size: 16px;">4. Acceptable Use</h3>
+        <p>You agree not to use Wingman for:</p>
+        <p>• Harassment, spam, or abusive behavior</p>
+        <p>• Catfishing or deceiving others</p>
+        <p>• Illegal activity or violating platform terms (Hinge, Bumble, etc.)</p>
+        <p>• Sharing explicit material or soliciting sex work</p>
+
+        <h3 style="color: #c8a97e; margin-top: 16px; margin-bottom: 8px; font-size: 16px;">5. Limitations of Liability</h3>
+        <p>• Wingman is provided "as-is" without warranty</p>
+        <p>• We are not liable for outcomes of your messages or conversations</p>
+        <p>• We're not responsible for data loss due to service interruptions</p>
+        <p>• Maximum liability: the amount you paid in the last 30 days</p>
+
+        <h3 style="color: #c8a97e; margin-top: 16px; margin-bottom: 8px; font-size: 16px;">6. User Conduct</h3>
+        <p>We reserve the right to suspend or terminate accounts that violate these terms or engage in harmful behavior.</p>
+
+        <h3 style="color: #c8a97e; margin-top: 16px; margin-bottom: 8px; font-size: 16px;">7. Changes to Terms</h3>
+        <p>We may update these terms at any time. Continued use means you accept the updated terms.</p>
+
+        <p style="margin-top: 24px; font-size: 12px; color: #666;">Last updated: March 28, 2026</p>
+      </div>
+    </div>
+    <div class="action-bar">
+      <button class="secondary" style="width: 100%;" onclick="show('screen-account')">← Back</button>
     </div>
   </div>
 
