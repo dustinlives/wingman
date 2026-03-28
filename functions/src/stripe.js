@@ -2,7 +2,6 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const Stripe = require('stripe');
 const { verifyAuth } = require('./middleware/auth');
-const { cors } = require('./lib/cors');
 const { getUser, updateUser, getUserByStripeCustomerId } = require('./lib/firestore');
 
 const stripe = new Stripe(functions.config().stripe.secret_key);
@@ -13,15 +12,34 @@ const stripe = new Stripe(functions.config().stripe.secret_key);
  * Requires Firebase auth token
  */
 const createCheckoutSession = functions.https.onRequest(async (req, res) => {
-  cors(req, res, async () => {
-    try {
-      const uid = await verifyAuth(req, res);
-      if (!uid) return;
+  // Set CORS headers manually
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'https://wingman-pwa.web.app',
+    'https://wingman-pwa.firebaseapp.com',
+    'https://wingman.app',
+    'http://localhost:5000',
+  ];
 
-      const userData = await getUser(uid);
-      if (!userData) {
-        return res.status(403).json({ error: 'User not found' });
-      }
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+
+  try {
+    const uid = await verifyAuth(req, res);
+    if (!uid) return;
+
+    const userData = await getUser(uid);
+    if (!userData) {
+      return res.status(403).json({ error: 'User not found' });
+    }
 
       // Create or retrieve Stripe customer
       let customerId = userData.subscription?.stripeCustomerId;
@@ -51,7 +69,6 @@ const createCheckoutSession = functions.https.onRequest(async (req, res) => {
       functions.logger.error('Checkout session error', err);
       return res.status(500).json({ error: 'Internal error' });
     }
-  });
 });
 
 /**
@@ -60,13 +77,32 @@ const createCheckoutSession = functions.https.onRequest(async (req, res) => {
  * Requires Firebase auth token
  */
 const createPortalSession = functions.https.onRequest(async (req, res) => {
-  cors(req, res, async () => {
-    try {
-      const uid = await verifyAuth(req, res);
-      if (!uid) return;
+  // Set CORS headers manually
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'https://wingman-pwa.web.app',
+    'https://wingman-pwa.firebaseapp.com',
+    'https://wingman.app',
+    'http://localhost:5000',
+  ];
 
-      const userData = await getUser(uid);
-      const customerId = userData?.subscription?.stripeCustomerId;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+
+  try {
+    const uid = await verifyAuth(req, res);
+    if (!uid) return;
+
+    const userData = await getUser(uid);
+    const customerId = userData?.subscription?.stripeCustomerId;
 
       if (!customerId) {
         return res.status(400).json({ error: 'No Stripe customer found' });
@@ -82,7 +118,6 @@ const createPortalSession = functions.https.onRequest(async (req, res) => {
       functions.logger.error('Portal session error', err);
       return res.status(500).json({ error: 'Internal error' });
     }
-  });
 });
 
 /**
