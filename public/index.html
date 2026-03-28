@@ -496,6 +496,7 @@
       signOut as firebaseSignOut 
     } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
     import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js';
 
     // Firebase Config
     const firebaseConfig = {
@@ -510,13 +511,17 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+    const functions = getFunctions(app);
+
+    // Version: used for cache busting - update on each deployment
+    const APP_VERSION = '3.1.0-oncall-fixed';
+    console.log('[Wingman] App version:', APP_VERSION);
 
     // Global state
     window._user = null;
     window._userData = null;
     window._selectedStage = null;
     window._screenshotBase64 = null;
-    const CLOUD_FUNCTION_URL = 'https://us-central1-wingman-pwa.cloudfunctions.net';
 
     // Screen management
     window.show = (screenId) => {
@@ -620,7 +625,7 @@
         const token = await auth.currentUser.getIdToken();
         const userPrompt = `You are a dating message coach. The user is at the "${window._selectedStage}" stage of a conversation on a dating app. ${window._screenshotBase64 ? 'They provided a screenshot of their conversation.' : ''} They want help with: "${message}"\n\nProvide exactly 3 different message options that are compelling, authentic, and match the conversation stage. Format as a JSON array with "message" field.`;
 
-        const response = await fetch(`${CLOUD_FUNCTION_URL}/claude`, {
+        const response = await fetch(`/api/claude`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -637,7 +642,7 @@
         }
 
         if (!response.ok) {
-          throw new Error('API request failed');
+          throw new Error(`API error: ${response.status}`);
         }
 
         const data = await response.json();
@@ -645,6 +650,7 @@
         window.show('screen-results');
         updateHomeScreen();
       } catch (err) {
+        console.error('Error generating messages:', err);
         alert('Error generating messages: ' + err.message);
         window.show('screen-home');
       }
@@ -691,7 +697,7 @@
     window.upgradeToSubscription = async () => {
       try {
         const token = await auth.currentUser.getIdToken();
-        const response = await fetch(`${CLOUD_FUNCTION_URL}/createCheckoutSession`, {
+        const response = await fetch(`/api/createCheckoutSession`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -710,7 +716,7 @@
     window.openBillingPortal = async () => {
       try {
         const token = await auth.currentUser.getIdToken();
-        const response = await fetch(`${CLOUD_FUNCTION_URL}/createPortalSession`, {
+        const response = await fetch(`/api/createPortalSession`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

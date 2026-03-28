@@ -1,130 +1,126 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const Stripe = require('stripe');
-const { verifyAuth } = require('./middleware/auth');
 const { getUser, updateUser, getUserByStripeCustomerId } = require('./lib/firestore');
 
 const stripe = new Stripe(functions.config().stripe.secret_key);
 
-/**
- * Create Stripe checkout session
- * POST /createCheckoutSession
- * Requires Firebase auth token
- */
+// ============ CHECKOUT SESSION ============
 const createCheckoutSession = functions.https.onRequest(async (req, res) => {
-  // Set CORS headers manually
-  const origin = req.headers.origin;
-  const allowedOrigins = [
-    'https://wingman-pwa.web.app',
-    'https://wingman-pwa.firebaseapp.com',
-    'https://wingman.app',
-    'http://localhost:5000',
-  ];
-
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  }
+  // CORS headers
+  res.set('Access-Control-Allow-Origin', 'https://wingman-pwa.web.app');
+  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.set('Access-Control-Max-Age', '3600');
 
   if (req.method === 'OPTIONS') {
-    return res.status(204).end();
+    return res.status(200).send('');
   }
 
   try {
-    const uid = await verifyAuth(req, res);
-    if (!uid) return;
+    // Get and verify auth token
+    const authHeader = req.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Missing or invalid Authorization header' });
+    }
 
+    const token = authHeader.slice(7);
+    let decodedIdToken;
+    try {
+      decodedIdToken = await admin.auth().verifyIdToken(token);
+    } catch (authErr) {
+      functions.logger.error('Token verification failed:', authErr);
+      return res.status(401).json({ error: 'Invalid auth token' });
+    }
+
+    const uid = decodedIdToken.uid;
     const userData = await getUser(uid);
+
     if (!userData) {
       return res.status(403).json({ error: 'User not found' });
     }
 
-      // Create or retrieve Stripe customer
-      let customerId = userData.subscription?.stripeCustomerId;
-      if (!customerId) {
-        const customer = await stripe.customers.create({
-          email: userData.email,
-          metadata: { firebaseUid: uid },
-        });
-        customerId = customer.id;
-        await updateUser(uid, { 'subscription.stripeCustomerId': customerId });
-      }
-
-      const session = await stripe.checkout.sessions.create({
-        customer: customerId,
-        payment_method_types: ['card'],
-        mode: 'subscription',
-        line_items: [{ price: functions.config().stripe.price_id, quantity: 1 }],
-        success_url: `https://wingman-pwa.firebaseapp.com/?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `https://wingman-pwa.firebaseapp.com/?checkout=canceled`,
-        subscription_data: {
-          metadata: { firebaseUid: uid },
-        },
+    // Create or retrieve Stripe customer
+    let customerId = userData.subscription?.stripeCustomerId;
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: userData.email,
+        metadata: { firebaseUid: uid },
       });
-
-      return res.json({ url: session.url });
-    } catch (err) {
-      functions.logger.error('Checkout session error', err);
-      return res.status(500).json({ error: 'Internal error' });
+      customerId = customer.id;
+      await updateUser(uid, { 'subscription.stripeCustomerId': customerId });
     }
+
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      payment_method_types: ['card'],
+      mode: 'subscription',
+      line_items: [{ price: functions.config().stripe.price_id, quantity: 1 }],
+      success_url: `https://wingman-pwa.firebaseapp.com/?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `https://wingman-pwa.firebaseapp.com/?checkout=canceled`,
+      subscription_data: {
+        metadata: { firebaseUid: uid },
+      },
+    });
+
+    return res.json({ url: session.url });
+  } catch (err) {
+    functions.logger.error('Checkout session error', err);
+    return res.status(500).json({ error: 'Internal error' });
+  }
 });
 
-/**
- * Create Stripe billing portal session
- * POST /createPortalSession
- * Requires Firebase auth token
- */
+// ============ BILLING PORTAL SESSION ============
 const createPortalSession = functions.https.onRequest(async (req, res) => {
-  // Set CORS headers manually
-  const origin = req.headers.origin;
-  const allowedOrigins = [
-    'https://wingman-pwa.web.app',
-    'https://wingman-pwa.firebaseapp.com',
-    'https://wingman.app',
-    'http://localhost:5000',
-  ];
-
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  }
+  // CORS headers
+  res.set('Access-Control-Allow-Origin', 'https://wingman-pwa.web.app');
+  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.set('Access-Control-Max-Age', '3600');
 
   if (req.method === 'OPTIONS') {
-    return res.status(204).end();
+    return res.status(200).send('');
   }
 
   try {
-    const uid = await verifyAuth(req, res);
-    if (!uid) return;
+    // Get and verify auth token
+    const authHeader = req.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Missing or invalid Authorization header' });
+    }
 
+    const token = authHeader.slice(7);
+    let decodedIdToken;
+    try {
+      decodedIdToken = await admin.auth().verifyIdToken(token);
+    } catch (authErr) {
+      functions.logger.error('Token verification failed:', authErr);
+      return res.status(401).json({ error: 'Invalid auth token' });
+    }
+
+    const uid = decodedIdToken.uid;
     const userData = await getUser(uid);
     const customerId = userData?.subscription?.stripeCustomerId;
 
-      if (!customerId) {
-        return res.status(400).json({ error: 'No Stripe customer found' });
-      }
-
-      const session = await stripe.billingPortal.sessions.create({
-        customer: customerId,
-        return_url: 'https://wingman-pwa.firebaseapp.com/',
-      });
-
-      return res.json({ url: session.url });
-    } catch (err) {
-      functions.logger.error('Portal session error', err);
-      return res.status(500).json({ error: 'Internal error' });
+    if (!customerId) {
+      return res.status(400).json({ error: 'No Stripe customer found' });
     }
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: 'https://wingman-pwa.firebaseapp.com/',
+    });
+
+    return res.json({ url: session.url });
+  } catch (err) {
+    functions.logger.error('Portal session error', err);
+    return res.status(500).json({ error: 'Internal error' });
+  }
 });
 
 /**
- * Stripe webhook handler
- * POST /stripeWebhook
- * Handles subscription lifecycle events
- * NOTE: Must receive raw request body for signature verification
+ * Stripe webhook handler (remain as onRequest for Stripe's webhooks)
+ * This is public and Stripe calls it with a signature
  */
 const stripeWebhook = functions.https.onRequest(async (req, res) => {
   const sig = req.headers['stripe-signature'];
@@ -140,8 +136,6 @@ const stripeWebhook = functions.https.onRequest(async (req, res) => {
     functions.logger.error('Webhook signature verification failed', err);
     return res.status(400).send('Webhook Error');
   }
-
-  const db = admin.firestore();
 
   try {
     switch (event.type) {

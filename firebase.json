@@ -4,6 +4,22 @@
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
       {
+        "source": "/api/claude",
+        "function": "claude"
+      },
+      {
+        "source": "/api/createCheckoutSession",
+        "function": "createCheckoutSession"
+      },
+      {
+        "source": "/api/createPortalSession",
+        "function": "createPortalSession"
+      },
+      {
+        "source": "/api/stripeWebhook",
+        "function": "stripeWebhook"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

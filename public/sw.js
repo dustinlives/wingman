@@ -1,4 +1,4 @@
-const CACHE = 'wingman-v1';
+const CACHE = 'wingman-v3';
 const SHELL = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', e => {

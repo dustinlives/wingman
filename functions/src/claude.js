@@ -1,61 +1,57 @@
 const functions = require('firebase-functions');
-const admin = require('firebase-admin');
 const fetch = require('node-fetch');
-const { verifyAuth } = require('./middleware/auth');
+const admin = require('firebase-admin');
 const { checkUsage } = require('./middleware/subscription');
-const { incrementUsage, getUser } = require('./lib/firestore');
+const { incrementUsage } = require('./lib/firestore');
 
 /**
  * Claude API proxy function
- * POST /claude
- * Requires Firebase auth token
- * Checks subscription status and daily free usage limit
- * Forwards request to Anthropic Claude API
+ * HTTP endpoint with raw body parsing for preflight + CORS
  */
 const claude = functions
   .runWith({ timeoutSeconds: 60, memory: '512MB' })
   .https.onRequest(async (req, res) => {
-    // Set CORS headers manually
-    const origin = req.headers.origin;
-    const allowedOrigins = [
-      'https://wingman-pwa.web.app',
-      'https://wingman-pwa.firebaseapp.com',
-      'https://wingman.app',
-      'http://localhost:5000',
-    ];
+    // CORS headers for preflight
+    res.set('Access-Control-Allow-Origin', 'https://wingman-pwa.web.app');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.set('Access-Control-Max-Age', '3600');
 
-    if (allowedOrigins.includes(origin)) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-      res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-      res.setHeader('Access-Control-Allow-Credentials', 'true');
-    }
-
-    // Handle preflight OPTIONS requests
     if (req.method === 'OPTIONS') {
-      return res.status(204).end();
+      return res.status(200).send('');
     }
 
     try {
-      if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
+      // Get and verify auth token
+      const authHeader = req.get('Authorization');
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Missing or invalid Authorization header' });
       }
 
-      // 1. Verify Firebase auth token
-      const uid = await verifyAuth(req, res);
-      if (!uid) return;
+      const token = authHeader.slice(7);
+      let decodedIdToken;
+      try {
+        decodedIdToken = await admin.auth().verifyIdToken(token);
+      } catch (authErr) {
+        functions.logger.error('Token verification failed:', authErr);
+        return res.status(401).json({ error: 'Invalid auth token' });
+      }
 
-      // 2. Check subscription / usage
-      const allowed = await checkUsage(uid, res);
-      if (!allowed) return;
+      const uid = decodedIdToken.uid;
 
-      // 3. Validate request body
+      // Check subscription / usage
+      const allowed = await checkUsage(uid, null);
+      if (!allowed) {
+        return res.status(402).json({ error: 'Daily limit exceeded' });
+      }
+
+      // Validate request data
       const { messages } = req.body;
       if (!messages || !Array.isArray(messages)) {
         return res.status(400).json({ error: 'messages array required' });
       }
 
-      // 4. Forward to Anthropic
+      // Forward to Anthropic
       const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -70,20 +66,20 @@ const claude = functions
         }),
       });
 
-      const data = await anthropicRes.json();
+      const anthropicData = await anthropicRes.json();
 
       if (!anthropicRes.ok) {
-        functions.logger.error('Anthropic error', data);
-        return res.status(502).json({ error: 'AI service error', detail: data });
+        functions.logger.error('Anthropic error', anthropicData);
+        return res.status(500).json({ error: 'AI service error' });
       }
 
-      // 5. Increment usage count
+      // Increment usage count
       await incrementUsage(uid);
 
-      return res.json(data);
+      return res.status(200).json(anthropicData);
     } catch (err) {
       functions.logger.error('Claude function error', err);
-      return res.status(500).json({ error: 'Internal error' });
+      return res.status(500).json({ error: err.message || 'Internal error' });
     }
   });
 
