@@ -802,7 +802,8 @@ Return EXACTLY this JSON structure:
             if (match) {
               currentKey = match[1].toUpperCase();
               parsed[currentKey] = match[2].trim();
-              console.log(`[Wingman] Found option ${currentKey}`);\n            } else if (currentKey && line.trim() && !line.match(/^[A-D]\s*[\u2014\-.\):\s]/)) {
+              console.log(`[Wingman] Found option ${currentKey}`);
+            } else if (currentKey && line.trim() && !line.match(/^[A-D]\s*[\u2014\-.\):\s]/)) {
               // Append continuation to current option (multi-line)
               if (parsed[currentKey]) {
                 parsed[currentKey] += ' ' + line.trim();
@@ -811,7 +812,8 @@ Return EXACTLY this JSON structure:
           });
           
           if (Object.keys(parsed).length === 0) {
-            throw new Error('Could not parse response in any format');\n          }
+            throw new Error('Could not parse response in any format');
+          }
           console.log('[Wingman] Extracted text options:', Object.keys(parsed));
         }
         
@@ -833,7 +835,8 @@ Return EXACTLY this JSON structure:
         const options = ['A', 'B', 'C', 'D'];
         const hasOptions = options.filter(k => parsed[k] && parsed[k].trim());
         if (hasOptions.length === 0) {
-          throw new Error('No response options (A/B/C/D) found in any format');\n        }
+          throw new Error('No response options (A/B/C/D) found in any format');
+        }
         console.log('[Wingman] Found', hasOptions.length, 'options:', hasOptions.join(', '));
         
         // Display A, B, C, D options
@@ -850,7 +853,8 @@ Return EXACTLY this JSON structure:
             bubble.className = 'message-bubble';
             bubble.innerHTML = `<strong>${opt} — ${optionLabels[opt]}</strong><br>${parsed[opt]}`;
             bubble.onclick = () => {
-              console.log(`[Wingman] Copied option ${opt} to clipboard`);\n              navigator.clipboard.writeText(parsed[opt]);
+              console.log(`[Wingman] Copied option ${opt} to clipboard`);
+              navigator.clipboard.writeText(parsed[opt]);
               bubble.style.background = 'rgba(76, 217, 100, 0.1)';
               setTimeout(() => { bubble.style.background = ''; }, 1000);
             };
