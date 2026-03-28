@@ -1,23 +1,23 @@
 {
   "name": "Wingman",
   "short_name": "Wingman",
-  "description": "AI dating message coach",
+  "description": "AI Dating Message Coach",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0a0a0f",
-  "theme_color": "#0a0a0f",
+  "background_color": "#0d0d0d",
+  "theme_color": "#c9a84c",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%230a0a0f' width='192' height='192' rx='45'/><text x='50%' y='50%' font-size='100' fill='%23c8a97e' text-anchor='middle' dominant-baseline='central' font-family='serif' font-weight='bold'>W</text></svg>",
+      "src": "/icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%230a0a0f' width='512' height='512' rx='120'/><text x='50%' y='50%' font-size='280' fill='%23c8a97e' text-anchor='middle' dominant-baseline='central' font-family='serif' font-weight='bold'>W</text></svg>",
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
