@@ -661,19 +661,23 @@
       document.getElementById('home-error').style.display = 'none';
       window.show('screen-loading');
 
-      try {
-        const token = await auth.currentUser.getIdToken();
-        
-        const stageContext = {
-          'Interest': 'The goal is to stand out and spark curiosity. Focus on being genuinely interesting, showing you\'ve read their profile, and creating intrigue that makes them want to respond.',
-          'Attraction': 'Build on initial interest. Create moments that make them smile or feel something. Show personality, wit, and confidence without trying too hard.',
-          'Rapport': 'Deepen the connection. Find common ground, share small vulnerabilities, make them feel understood. Move toward genuine conversation rather than impressing.',
-          'Desire': 'Create emotional and physical attraction. Be more direct about interest, suggest meeting, build anticipation. Show you\'re thinking about them.',
-          'Momentum': 'Keep the energy moving forward. Suggest specific plans, build on previous conversations, show consistent interest. Eliminate uncertainty and move toward real-world connection.',
-          'Close': 'Finalize logistics and build confidence. Be direct about meeting, remove barriers, show genuine interest in the real person. This is about follow-through and authentic intention.'
-        };
+      const maxRetries = 2;
+      let lastError;
+      
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          const token = await auth.currentUser.getIdToken();
+          
+          const stageContext = {
+            'Interest': 'The goal is to stand out and spark curiosity. Focus on being genuinely interesting, showing you\'ve read their profile, and creating intrigue that makes them want to respond.',
+            'Attraction': 'Build on initial interest. Create moments that make them smile or feel something. Show personality, wit, and confidence without trying too hard.',
+            'Rapport': 'Deepen the connection. Find common ground, share small vulnerabilities, make them feel understood. Move toward genuine conversation rather than impressing.',
+            'Desire': 'Create emotional and physical attraction. Be more direct about interest, suggest meeting, build anticipation. Show you\'re thinking about them.',
+            'Momentum': 'Keep the energy moving forward. Suggest specific plans, build on previous conversations, show consistent interest. Eliminate uncertainty and move toward real-world connection.',
+            'Close': 'Finalize logistics and build confidence. Be direct about meeting, remove barriers, show genuine interest in the real person. This is about follow-through and authentic intention.'
+          };
 
-        const userPrompt = `You are a conversational strategist helping someone communicate with calm confidence, emotional intelligence, and subtle playful tension on dating apps and in early romantic conversations.
+          const userPrompt = `You are a conversational strategist helping someone communicate with calm confidence, emotional intelligence, and subtle playful tension on dating apps and in early romantic conversations.
 
 Communication style to maintain: observational, grounded, warm, lightly playful, quietly decisive. No try-hard energy, no interview-style questions, no validation seeking, no long philosophical texts.
 
@@ -709,43 +713,68 @@ Return EXACTLY this JSON structure:
   "pacing": "slow down or advance"
 }`;
 
-        console.log('[Wingman] Prompt stage:', window._selectedStage);
-        console.log('[Wingman] Calling /api/claude with token');
-        const response = await fetch(`/api/claude`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            messages: [{ role: 'user', content: userPrompt }]
-          })
-        });
+          console.log('[Wingman] Attempt ' + attempt + '/' + maxRetries);
+          console.log('[Wingman] Prompt stage:', window._selectedStage);
+          console.log('[Wingman] Calling /api/claude with token');
+          
+          // Create abort controller for timeout (90 seconds for slow mobile)
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 90000);
+          
+          const response = await fetch(`/api/claude`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              messages: [{ role: 'user', content: userPrompt }]
+            }),
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
 
-        console.log('[Wingman] Response status:', response.status);
+          console.log('[Wingman] Response status:', response.status);
 
-        if (response.status === 402) {
-          console.log('[Wingman] Daily limit exceeded (402)');
-          window.show('screen-paywall');
-          return;
+          if (response.status === 402) {
+            console.log('[Wingman] Daily limit exceeded (402)');
+            window.show('screen-paywall');
+            return;
+          }
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[Wingman] API error:', response.status, errorText);
+            throw new Error(`API error: ${response.status} - ${errorText}`);
+          }
+
+          const data = await response.json();
+          console.log('[Wingman] Response data received:', data);
+          displayResults(data);
+          window.show('screen-results');
+          updateHomeScreen();
+          return; // Success - exit retry loop
+          
+        } catch (err) {
+          lastError = err;
+          console.error('[Wingman] Attempt ' + attempt + ' failed:', err.message);
+          
+          // On network/timeout errors, retry. On parsing errors, don't retry.
+          if (attempt < maxRetries && (err.name === 'AbortError' || err.message.includes('Failed to fetch'))) {
+            console.log('[Wingman] Retrying due to network error...');
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+          } else {
+            console.error('[Wingman] Not retrying:', err.message);
+            break;
+          }
         }
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('[Wingman] API error:', response.status, errorText);
-          throw new Error(`API error: ${response.status} - ${errorText}`);
-        }
-
-        const data = await response.json();
-        console.log('[Wingman] Response data received:', data);
-        displayResults(data);
-        window.show('screen-results');
-        updateHomeScreen();
-      } catch (err) {
-        console.error('[Wingman] Error generating messages:', err);
-        alert('Error generating messages: ' + err.message);
-        window.show('screen-home');
       }
+      
+      // All retries failed
+      console.error('[Wingman] All retries exhausted:', lastError);
+      alert('Error generating messages: ' + lastError.message + '\n\nTip: Check your internet connection and try again.');
+      window.show('screen-home');
     };
 
     window.displayResults = (data) => {
@@ -761,30 +790,53 @@ Return EXACTLY this JSON structure:
         console.log('[Wingman] Raw Claude response:', content);
         console.log('[Wingman] Raw Claude response length:', content.length);
         
-        // Clean markdown code blocks
+        // Clean markdown code blocks and trim
         content = content.replace(/^```[\w]*\n?/gm, '').replace(/```$/gm, '').trim();
         console.log('[Wingman] After cleanup:', content);
         
-        // Extract JSON object
+        // Enhanced JSON extraction with multiple strategies
         let parsed = null;
-        const jsonMatch = content.match(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/);
-        console.log('[Wingman] JSON match result:', jsonMatch);
         
-        if (jsonMatch) {
-          console.log('[Wingman] Attempting to parse:', jsonMatch[0]);
-          try {
-            parsed = JSON.parse(jsonMatch[0]);
-            console.log('[Wingman] Successfully parsed JSON:', parsed);
-          } catch (parseErr) {
-            console.log('[Wingman] JSON parse failed:', parseErr.message);
-            console.log('[Wingman] Failed to parse:', jsonMatch[0]);
+        // Strategy 1: Try direct JSON parse
+        try {
+          parsed = JSON.parse(content);
+          console.log('[Wingman] Strategy 1 (direct parse) succeeded');
+        } catch (e1) {
+          console.log('[Wingman] Strategy 1 failed, trying extraction...');
+          
+          // Strategy 2: Extract JSON by finding first { and last }
+          const firstBrace = content.indexOf('{');
+          const lastBrace = content.lastIndexOf('}');
+          
+          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            const extracted = content.substring(firstBrace, lastBrace + 1);
+            console.log('[Wingman] Strategy 2 extracted:', extracted.substring(0, 100));
+            
+            try {
+              parsed = JSON.parse(extracted);
+              console.log('[Wingman] Strategy 2 (brace extraction) succeeded');
+            } catch (e2) {
+              console.log('[Wingman] Strategy 2 failed:', e2.message);
+              
+              // Strategy 3: Try regex match for nested objects
+              const jsonMatch = content.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                console.log('[Wingman] Strategy 3 attempting:', jsonMatch[0].substring(0, 100));
+                try {
+                  parsed = JSON.parse(jsonMatch[0]);
+                  console.log('[Wingman] Strategy 3 (regex match) succeeded');
+                } catch (e3) {
+                  console.log('[Wingman] Strategy 3 failed:', e3.message);
+                }
+              }
+            }
           }
         }
         
         // Validate we have options
         if (!parsed || typeof parsed !== 'object') {
-          console.log('[Wingman] Invalid parsed:', parsed);
-          throw new Error('Failed to extract valid JSON');
+          console.log('[Wingman] JSON parsing failed. Raw content was:', content.substring(0, 200));
+          throw new Error('Failed to extract valid JSON. Server may have returned malformed response.');
         }
 
         const options = ['A', 'B', 'C', 'D'];
