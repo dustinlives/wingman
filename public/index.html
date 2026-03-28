@@ -760,93 +760,44 @@ Return EXACTLY this JSON structure:
       container.innerHTML = '';
       
       try {
+        if (!data || !data.content || !data.content[0] || !data.content[0].text) {
+          throw new Error('Invalid response structure');
+        }
+
         let content = data.content[0].text;
-        console.log('[Wingman] Raw Claude response:', content.substring(0, 300) + '...');
+        console.log('[Wingman] Raw Claude response length:', content.length);
         
-        // Clean up markdown code blocks and extra whitespace
-        content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-        console.log('[Wingman] Cleaned response:', content.substring(0, 100) + '...');
+        // Clean markdown code blocks
+        content = content.replace(/^```[\w]*\n?/gm, '').replace(/```$/gm, '').trim();
         
-        // Try to extract JSON object or array from response
+        // Extract JSON object
         let parsed = null;
-        let isArray = false;
+        const jsonMatch = content.match(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/);
         
-        // Try JSON object first
-        const objMatch = content.match(/\{[\s\S]*\}/);
-        if (objMatch) {
+        if (jsonMatch) {
           try {
-            parsed = JSON.parse(objMatch[0]);
-            console.log('[Wingman] Successfully parsed JSON object');
-          } catch (e) {
-            console.log('[Wingman] JSON object parse failed, trying array...');
+            parsed = JSON.parse(jsonMatch[0]);
+            console.log('[Wingman] Successfully parsed JSON');
+          } catch (parseErr) {
+            console.log('[Wingman] JSON parse failed');
           }
         }
         
-        // If object parse failed, try array
-        if (!parsed) {
-          const arrMatch = content.match(/\[[\s\S]*\]/);
-          if (arrMatch) {
-            try {
-              parsed = JSON.parse(arrMatch[0]);
-              isArray = true;
-              console.log('[Wingman] Successfully parsed JSON array with', parsed.length, 'items');
-            } catch (e) {
-              console.log('[Wingman] JSON array parse failed');
-            }
-          }
+        // Validate we have options
+        if (!parsed || typeof parsed !== 'object') {
+          throw new Error('Failed to extract valid JSON');
         }
-        
-        // If still no JSON, try to intelligently extract text lines starting with A, B, C, D
-        if (!parsed) {
-          console.log('[Wingman] No JSON found, attempting intelligent text extraction...');
-          parsed = {};
-          let currentKey = null;
-          
-          const lines = content.split('\n');
-          lines.forEach(line => {
-            // Look for lines starting with "A —", "A -", "A.", "A)", etc.
-            const match = line.match(/^\s*([A-D])\s*[\u2014\-.\):\s]+\s*(.+)$/i);
-            if (match) {
-              currentKey = match[1].toUpperCase();
-              parsed[currentKey] = match[2].trim();
-              console.log(`[Wingman] Found option ${currentKey}`);
-            } else if (currentKey && line.trim() && !line.match(/^[A-D]\s*[\u2014\-.\):\s]/)) {
-              // Append continuation to current option (multi-line)
-              if (parsed[currentKey]) {
-                parsed[currentKey] += ' ' + line.trim();
-              }
-            }
-          });
-          
-          if (Object.keys(parsed).length === 0) {
-            throw new Error('Could not parse response in any format');
-          }
-          console.log('[Wingman] Extracted text options:', Object.keys(parsed));
-        }
-        
-        // If we got an array, convert to object with A/B/C/D keys
-        if (isArray && Array.isArray(parsed)) {
-          const optionKeys = ['A', 'B', 'C', 'D'];
-          const result = {};
-          parsed.forEach((item, i) => {
-            const key = optionKeys[i];
-            if (key) {
-              result[key] = typeof item === 'string' ? item : (item.message || item.text || item.option || JSON.stringify(item));
-            }
-          });
-          parsed = result;
-          console.log('[Wingman] Converted array to object with keys:', Object.keys(parsed));
-        }
-        
-        // Ensure we have A/B/C/D options (allowing subset)
+
         const options = ['A', 'B', 'C', 'D'];
-        const hasOptions = options.filter(k => parsed[k] && parsed[k].trim());
-        if (hasOptions.length === 0) {
-          throw new Error('No response options (A/B/C/D) found in any format');
-        }
-        console.log('[Wingman] Found', hasOptions.length, 'options:', hasOptions.join(', '));
+        const hasOptions = options.filter(k => parsed[k] && String(parsed[k]).trim().length > 0);
         
-        // Display A, B, C, D options
+        if (hasOptions.length === 0) {
+          throw new Error('No response options found');
+        }
+
+        console.log('[Wingman] Found options:', hasOptions);
+        
+        // Display options
         const optionLabels = {
           'A': 'Most Natural',
           'B': 'Slightly Playful',
@@ -855,13 +806,15 @@ Return EXACTLY this JSON structure:
         };
         
         options.forEach(opt => {
-          if (parsed[opt] && parsed[opt].trim()) {
+          const text = parsed[opt];
+          if (text && String(text).trim().length > 0) {
             const bubble = document.createElement('div');
             bubble.className = 'message-bubble';
-            bubble.innerHTML = `<strong>${opt} — ${optionLabels[opt]}</strong><br>${parsed[opt]}`;
+            bubble.innerHTML = `<strong>${opt} — ${optionLabels[opt]}</strong><br>${String(text).trim()}`;
+            bubble.style.cursor = 'pointer';
             bubble.onclick = () => {
-              console.log(`[Wingman] Copied option ${opt} to clipboard`);
-              navigator.clipboard.writeText(parsed[opt]);
+              console.log(`[Wingman] Copying option ${opt}`);
+              navigator.clipboard.writeText(String(text).trim());
               bubble.style.background = 'rgba(76, 217, 100, 0.1)';
               setTimeout(() => { bubble.style.background = ''; }, 1000);
             };
@@ -869,23 +822,32 @@ Return EXACTLY this JSON structure:
           }
         });
         
-        // Display strategy metadata if available
-        if (parsed.strategy || parsed.approach || parsed.pacing) {
+        // Strategy bubble
+        const strategy = String(parsed.strategy || '').trim();
+        const approach = String(parsed.approach || '').trim();
+        const pacing = String(parsed.pacing || '').trim();
+        
+        if (strategy || approach || pacing) {
           const strategyBubble = document.createElement('div');
           strategyBubble.className = 'message-bubble strategy-bubble';
-          let strategyHTML = '<strong>Strategy</strong><br>';
-          if (parsed.strategy) strategyHTML += `📍 ${parsed.strategy}<br>`;
-          if (parsed.approach) strategyHTML += `💬 ${parsed.approach}<br>`;
-          if (parsed.pacing) strategyHTML += `⚡ ${parsed.pacing}`;
-          strategyBubble.innerHTML = strategyHTML;
+          let html = '<strong>Strategy</strong><br>';
+          if (strategy) html += `📍 ${strategy}<br>`;
+          if (approach) html += `💬 ${approach}<br>`;
+          if (pacing) html += `⚡ ${pacing}`;
+          strategyBubble.innerHTML = html;
           container.appendChild(strategyBubble);
-          console.log('[Wingman] Strategy info:', {strategy: parsed.strategy, approach: parsed.approach, pacing: parsed.pacing});
+          console.log('[Wingman] Added strategy metadata');
         }
+
+        if (hasOptions.length === 0 && !strategy && !approach && !pacing) {
+          throw new Error('No content to display');
+        }
+
       } catch (e) {
-        console.error('[Wingman] Parse error, showing raw content:', e.message);
+        console.error('[Wingman] Display error:', e.message);
         const bubble = document.createElement('div');
         bubble.className = 'message-bubble';
-        bubble.innerHTML = data.content[0].text;
+        bubble.innerHTML = `<strong>Error</strong><br>${e.message}. Please try again.`;
         container.appendChild(bubble);
       }
     };
