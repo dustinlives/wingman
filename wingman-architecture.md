@@ -1099,6 +1099,131 @@ These are out of scope for v1 but worth designing toward:
 
 ---
 
-*Document version: 1.0 — generated for coding agent handoff.*  
+## 16. Pre-Launch Checklist & Next Steps
+
+Current status: **Beta (test Stripe keys, all features working)**
+
+### Phase 1: Go Live (30 minutes)
+
+- [ ] **Switch Stripe to LIVE mode**
+  - Get live secret key and price ID from Stripe Dashboard
+  - Update Firebase config: `firebase functions:config:set stripe.secret_key="sk_live_..." stripe.price_id="price_..."`
+  - Deploy: `firebase deploy --only functions`
+  - Verify webhook endpoint updated to production Stripe account
+
+- [ ] **Test one real payment**
+  - Use real card ending in 4242 (or your own card)
+  - Verify: user doc gets `stripeSubscriptionId`, subscription status becomes 'active'
+  - Verify: can generate unlimited messages after payment
+  - Verify: Stripe webhook fires and Firestore updates correctly
+
+- [ ] **Verify production domain**
+  - Domain: `https://wingman-pwa.web.app` (or custom domain if configured)
+  - Test redirect flow after payment
+
+### Phase 2: Legal & Compliance (1-2 days)
+
+- [ ] **Create Privacy Policy**
+  - Host at `/privacy-policy` (add to public/index.html as new screen)
+  - Cover: what data we collect (email, screenshot), how we store it, retention policy
+  - Mention: screenshots are sent to Anthropic, never stored
+  - Link to Stripe & Anthropic privacy policies
+
+- [ ] **Create Terms of Service**
+  - Host at `/terms` 
+  - Cover: subscription auto-renews monthly, cancellation policy, refunds
+  - Acceptable use: no spam, harassment, fake profiles
+
+- [ ] **Prepare Refund Policy**
+  - Standard: 7-day refund window via Stripe
+  - Update Stripe account → Billing settings with policy
+
+- [ ] **GDPR Compliance** (if selling in EU/UK)
+  - Add user data deletion endpoint (opt-in from account screen)
+  - Document data processing practices
+  - Add "I agree to terms" checkbox on sign-up
+
+### Phase 3: Platform Polish (1 day)
+
+- [ ] **Test on real iOS devices**
+  - Test on iPhone 12, 14, 15 (various sizes)
+  - Test on iPad (landscape orientation)
+  - Verify "Add to Home Screen" works
+  - Test on slow 4G network (check loading states)
+
+- [ ] **Error handling & edge cases**
+  - What happens if Claude times out? (Retry UI, show error message)
+  - What happens if payment fails mid-flow? (Clear error, option to retry)
+  - What happens if user cancels subscription? (Show paywall again next call)
+  - Test invalid screenshot (non-image file) → error message
+
+- [ ] **Add user support contact**
+  - Email: support@wingman.app or similar
+  - Add "Help" link in screen-account
+  - Set up email forwarding
+
+- [ ] **Stripe Customer Portal customization**
+  - Customize invoice email from address
+  - Add company name to portal
+  - Test subscription management flows (pause, resume, update card)
+
+### Phase 4: Analytics & Monitoring (1 day)
+
+- [ ] **Enable Firebase Analytics**
+  - Add to frontend: track `sign_up`, `subscription_purchased`, `api_call_made`
+  - Set up alerts in Firebase console for errors > 5%
+
+- [ ] **Add error logging**
+  - Cloud Functions: capture all errors with context
+  - View via: `firebase functions:log` or Firebase Console
+
+- [ ] **Monitor Stripe webhooks**
+  - Stripe Dashboard → Developers → Webhooks → Watch logs
+  - Set up Slack/email alert if webhook delivery fails
+
+- [ ] **Set daily dashboard**
+  - Firebase Dashboard: Active users, Auth sign-ups
+  - Stripe Dashboard: Revenue, failed payments, refunds
+  - Anthropic Dashboard: API cost, token usage
+
+### Phase 5: Soft Launch (Optional, 1-2 weeks)
+
+Before full public launch, consider:
+
+- [ ] **Beta testers** (invite 10-20 friends)
+  - They test, you collect feedback
+  - Monitor for bugs in real conditions
+  - Iterate quickly
+
+- [ ] **Track key metrics**
+  - Conversion rate (free users → paid)
+  - Churn rate (% canceling per week)
+  - Cost per installation
+  - Average revenue per user (ARPU)
+
+### Phase 6: Full Public Launch
+
+- [ ] **Create landing page** (optional but recommended)
+  - Separate site (e.g., marketing.wingman.app or wingman.app/landing) with screenshots, testimonials
+  - SEO: write blog post, submit to Product Hunt / Hacker News
+
+- [ ] **Set up referral program** (future version)
+  - Give $5 credit per friend who signs up
+  - Automatically extend paid subscription
+
+- [ ] **Marketing channels**
+  - Social: TikTok, Instagram, YouTube Shorts (dating/pickup artist audience)
+  - Communities: Reddit (r/dating, r/Tinder), Discord servers
+  - Partnerships: mention in dating coach blogs
+
+### Known Technical Debt (for later)
+
+- Node.js 20 Cloud Functions deprecated 2026-04 → upgrade to Node 22 before March 2027
+- Firebase config API deprecated March 2027 → migrate to `params` package before then
+- Consider upgrading firebase-functions SDK (currently 4.9.0, latest is 5.1.0+)
+
+---
+
+*Document version: 1.1 — with pre-launch checklist.*  
 *All API endpoints, Firestore schema, and function signatures are production-ready.*  
-*Replace placeholder values (project IDs, price IDs, domain) with actuals before deploying.*
+*Current state: Live-ready (switch Stripe keys to go fully public).*
