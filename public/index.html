@@ -205,6 +205,18 @@
       background-color: #d9b88f;
     }
 
+    .message-bubble.strategy-bubble {
+      border-left: 3px solid #4cd964;
+      background-color: rgba(76, 217, 100, 0.05);
+      cursor: default;
+      margin-top: 16px;
+    }
+
+    .message-bubble.strategy-bubble:hover {
+      background-color: rgba(76, 217, 100, 0.08);
+      transform: none;
+    }
+
     /* Spinner */
     .spinner {
       width: 40px;
@@ -525,9 +537,11 @@
 
     // Screen management
     window.show = (screenId) => {
+      console.log('[Wingman] Navigating to screen:', screenId);
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(screenId).classList.add('active');
       if (screenId === 'screen-account') {
+        console.log('[Wingman] Loading account screen, updating subscription info');
         updateAccountScreen();
       }
     };
@@ -535,9 +549,12 @@
     // Auth handlers
     window.signInGoogle = async () => {
       try {
+        console.log('[Wingman] Starting Google Sign-In');
         const provider = new GoogleAuthProvider();
-        await signInWithPopup(auth, provider);
+        const result = await signInWithPopup(auth, provider);
+        console.log('[Wingman] Google Sign-In successful:', result.user.uid);
       } catch (err) {
+        console.error('[Wingman] Google Sign-In failed:', err);
         alert('Sign in failed: ' + err.message);
       }
     };
@@ -551,12 +568,16 @@
       const email = document.getElementById('auth-email').value;
       const password = document.getElementById('auth-password').value;
       if (!email || !password) {
+        console.warn('[Wingman] Email/password missing');
         alert('Please enter email and password');
         return;
       }
       try {
-        await signInWithEmailAndPassword(auth, email, password);
+        console.log('[Wingman] Starting email sign-in:', email);
+        const result = await signInWithEmailAndPassword(auth, email, password);
+        console.log('[Wingman] Email sign-in successful:', result.user.uid);
       } catch (err) {
+        console.error('[Wingman] Email sign-in failed:', err.code, err.message);
         alert('Sign in failed: ' + err.message);
       }
     };
@@ -565,40 +586,58 @@
       const email = document.getElementById('auth-email').value;
       const password = document.getElementById('auth-password').value;
       if (!email || !password) {
+        console.warn('[Wingman] Email/password missing for signup');
         alert('Please enter email and password');
         return;
       }
       try {
-        await createUserWithEmailAndPassword(auth, email, password);
+        console.log('[Wingman] Starting email sign-up:', email);
+        const result = await createUserWithEmailAndPassword(auth, email, password);
+        console.log('[Wingman] Email sign-up successful:', result.user.uid);
       } catch (err) {
+        console.error('[Wingman] Email sign-up failed:', err.code, err.message);
         alert('Sign up failed: ' + err.message);
       }
     };
 
     window.signOut = async () => {
       try {
+        console.log('[Wingman] Signing out user:', window._user?.uid);
         await firebaseSignOut(auth);
+        console.log('[Wingman] Sign out successful');
       } catch (err) {
+        console.error('[Wingman] Sign out failed:', err);
         alert('Sign out failed: ' + err.message);
       }
     };
 
     // Stage selection
     window.selectStage = (stage) => {
+      console.log(`[Wingman] Stage selected: ${stage}`);
       window._selectedStage = stage;
       document.querySelectorAll('.stage-btn').forEach(btn => btn.classList.remove('selected'));
       event.target.classList.add('selected');
+      console.log(`[Wingman] Stage button UI updated`);
     };
 
     // File upload
     window.handleFileUpload = (event) => {
       const file = event.target.files[0];
-      if (!file) return;
+      if (!file) {
+        console.log('[Wingman] File upload cancelled or no file selected');
+        return;
+      }
+      console.log(`[Wingman] File upload started: ${file.name} (${file.type}, ${Math.round(file.size / 1024)}KB)`);
       const reader = new FileReader();
       reader.onload = (e) => {
         window._screenshotBase64 = e.target.result;
+        console.log(`[Wingman] File converted to Base64: ${e.target.result.substring(0, 50)}...`);
         document.getElementById('file-upload').classList.add('active');
         document.getElementById('file-label').textContent = '✓ Screenshot uploaded';
+        console.log('[Wingman] File upload UI updated');
+      };
+      reader.onerror = () => {
+        console.error('[Wingman] File read error');
       };
       reader.readAsDataURL(file);
     };
@@ -623,8 +662,54 @@
 
       try {
         const token = await auth.currentUser.getIdToken();
-        const userPrompt = `You are a dating message coach. The user is at the "${window._selectedStage}" stage of a conversation on a dating app. ${window._screenshotBase64 ? 'They provided a screenshot of their conversation.' : ''} They want help with: "${message}"\n\nProvide exactly 3 different message options that are compelling, authentic, and match the conversation stage. Format as a JSON array with "message" field.`;
+        
+        // Build stage-specific context
+        const stageContext = {
+          'Interest': 'The goal is to stand out and spark curiosity. Focus on being genuinely interesting, showing you\'ve read their profile, and creating intrigue that makes them want to respond.',
+          'Attraction': 'Build on initial interest. Create moments that make them smile or feel something. Show personality, wit, and confidence without trying too hard.',
+          'Rapport': 'Deepen the connection. Find common ground, share small vulnerabilities, make them feel understood. Move toward genuine conversation rather than impressing.',
+          'Desire': 'Create emotional and physical attraction. Be more direct about interest, suggest meeting, build anticipation. Show you\'re thinking about them.',
+          'Momentum': 'Keep the energy moving forward. Suggest specific plans, build on previous conversations, show consistent interest. Eliminate uncertainty and move toward real-world connection.',
+          'Close': 'Finalize logistics and build confidence. Be direct about meeting, remove barriers, show genuine interest in the real person. This is about follow-through and authentic intention.'
+        };
 
+        const userPrompt = `You are a conversational strategist helping someone communicate with calm confidence, emotional intelligence, and subtle playful tension on dating apps and in early romantic conversations.
+
+Communication style to maintain: observational, grounded, warm, lightly playful, quietly decisive. No try-hard energy, no interview-style questions, no validation seeking, no long philosophical texts.
+
+STAGE CONTEXT: The user is at the "${window._selectedStage}" stage. ${stageContext[window._selectedStage] || ''}
+
+${window._screenshotBase64 ? 'They provided a screenshot of their conversation - analyze the tone, energy, and flow carefully.' : 'Use the context they\'re providing to understand the conversation dynamic.'}
+
+THEIR CONTEXT: ${message}
+
+Generate exactly 4 response options labeled:
+
+A — Most Natural
+B — Slightly Playful  
+C — Warm & Direct
+D — Momentum Forward
+
+Each option should be 1-3 sentences max. After the 4 options, include:
+
+✓ Momentum strategy (one line)
+✓ Ask a question OR make a statement
+✓ Slow down OR advance
+
+CRITICAL: Return ONLY valid JSON with no markdown code blocks, no explanations, no extra text.
+
+Return EXACTLY this JSON structure:
+{
+  "A": "your response here",
+  "B": "your response here",
+  "C": "your response here",
+  "D": "your response here",
+  "strategy": "momentum strategy here",
+  "approach": "question or statement",
+  "pacing": "slow down or advance"
+}`;
+
+        console.log('[Wingman] Prompt stage:', window._selectedStage);
         console.log('[Wingman] Calling /api/claude with token');
         const response = await fetch(`/api/claude`, {
           method: 'POST',
@@ -668,31 +753,75 @@
       container.innerHTML = '';
       
       try {
-        const content = data.content[0].text;
-        console.log('[Wingman] Raw content:', content);
+        let content = data.content[0].text;
+        console.log('[Wingman] Raw Claude response:', content.substring(0, 200) + '...');
         
-        // Try to extract JSON array from response
-        const jsonMatch = content.match(/\[[\s\S]*\]/);
+        // Clean up markdown code blocks and extra whitespace
+        content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        console.log('[Wingman] Cleaned response:', content.substring(0, 100) + '...');
+        
+        // Try to extract JSON object from response
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
-          throw new Error('No JSON array found in response');
+          console.warn('[Wingman] No JSON object found in response');
+          throw new Error('No JSON object found in response');
         }
         
-        const messages = JSON.parse(jsonMatch[0]).map(item => item.message || item.text || JSON.stringify(item));
-        console.log('[Wingman] Parsed messages:', messages);
+        // Parse and validate JSON
+        let parsed;
+        try {
+          parsed = JSON.parse(jsonMatch[0]);
+          console.log('[Wingman] Successfully parsed JSON response object');
+        } catch (parseErr) {
+          console.error('[Wingman] JSON parse error:', parseErr.message);
+          console.log('[Wingman] Failed to parse:', jsonMatch[0].substring(0, 150));
+          throw new Error('Invalid JSON structure');
+        }
         
-        messages.forEach((msg, i) => {
-          const bubble = document.createElement('div');
-          bubble.className = 'message-bubble';
-          bubble.innerHTML = msg;
-          bubble.onclick = () => {
-            navigator.clipboard.writeText(msg);
-            bubble.style.background = 'rgba(76, 217, 100, 0.1)';
-            setTimeout(() => { bubble.style.background = ''; }, 1000);
-          };
-          container.appendChild(bubble);
+        // Validate required keys exist
+        if (!parsed.A || !parsed.B || !parsed.C || !parsed.D) {
+          console.error('[Wingman] Missing required options A, B, C, or D');
+          throw new Error('Missing required response options');
+        }
+        
+        // Display A, B, C, D options
+        const options = ['A', 'B', 'C', 'D'];
+        const optionLabels = {
+          'A': 'Most Natural',
+          'B': 'Slightly Playful',
+          'C': 'Warm & Direct',
+          'D': 'Momentum Forward'
+        };
+        
+        options.forEach(opt => {
+          if (parsed[opt]) {
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.innerHTML = `<strong>${opt} — ${optionLabels[opt]}</strong><br>${parsed[opt]}`;
+            bubble.onclick = () => {
+              console.log(`[Wingman] Copied option ${opt} to clipboard`);
+              navigator.clipboard.writeText(parsed[opt]);
+              bubble.style.background = 'rgba(76, 217, 100, 0.1)';
+              setTimeout(() => { bubble.style.background = ''; }, 1000);
+            };
+            container.appendChild(bubble);
+          }
         });
+        
+        // Display strategy metadata if available
+        if (parsed.strategy || parsed.approach || parsed.pacing) {
+          const strategyBubble = document.createElement('div');
+          strategyBubble.className = 'message-bubble strategy-bubble';
+          let strategyHTML = '<strong>Strategy</strong><br>';
+          if (parsed.strategy) strategyHTML += `📍 ${parsed.strategy}<br>`;
+          if (parsed.approach) strategyHTML += `💬 ${parsed.approach}<br>`;
+          if (parsed.pacing) strategyHTML += `⚡ ${parsed.pacing}`;
+          strategyBubble.innerHTML = strategyHTML;
+          container.appendChild(strategyBubble);
+          console.log('[Wingman] Strategy info:', {strategy: parsed.strategy, approach: parsed.approach, pacing: parsed.pacing});
+        }
       } catch (e) {
-        console.error('[Wingman] Parse error, showing raw content:', e);
+        console.error('[Wingman] Parse error, showing raw content:', e.message);
         const bubble = document.createElement('div');
         bubble.className = 'message-bubble';
         bubble.innerHTML = data.content[0].text;
@@ -701,6 +830,7 @@
     };
 
     window.clearForm = () => {
+      console.log('[Wingman] Clearing form');
       document.getElementById('message-input').value = '';
       document.getElementById('screenshot-input').value = '';
       document.getElementById('file-upload').classList.remove('active');
@@ -713,7 +843,9 @@
 
     window.upgradeToSubscription = async () => {
       try {
+        console.log('[Wingman] Starting checkout flow for user:', window._user?.uid);
         const token = await auth.currentUser.getIdToken();
+        console.log('[Wingman] Got ID token, calling createCheckoutSession');
         const response = await fetch(`/api/createCheckoutSession`, {
           method: 'POST',
           headers: {
@@ -722,17 +854,25 @@
           }
         });
 
-        if (!response.ok) throw new Error('Failed to create checkout session');
+        console.log('[Wingman] Checkout response status:', response.status);
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error(`Checkout failed: ${response.status} - ${error}`);
+        }
         const { url } = await response.json();
+        console.log('[Wingman] Redirecting to Stripe checkout:', url);
         window.location.href = url;
       } catch (err) {
+        console.error('[Wingman] Checkout error:', err);
         alert('Upgrade failed: ' + err.message);
       }
     };
 
     window.openBillingPortal = async () => {
       try {
+        console.log('[Wingman] Opening billing portal for user:', window._user?.uid);
         const token = await auth.currentUser.getIdToken();
+        console.log('[Wingman] Got ID token, calling createPortalSession');
         const response = await fetch(`/api/createPortalSession`, {
           method: 'POST',
           headers: {
@@ -741,47 +881,66 @@
           }
         });
 
-        if (!response.ok) throw new Error('Failed to create portal session');
+        console.log('[Wingman] Portal response status:', response.status);
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error(`Portal failed: ${response.status} - ${error}`);
+        }
         const { url } = await response.json();
+        console.log('[Wingman] Redirecting to billing portal:', url);
         window.location.href = url;
       } catch (err) {
+        console.error('[Wingman] Portal error:', err);
         alert('Failed to open billing portal: ' + err.message);
       }
     };
 
     window.updateHomeScreen = async () => {
-      if (!window._user) return;
+      if (!window._user) {
+        console.log('[Wingman] updateHomeScreen: no user logged in');
+        return;
+      }
       try {
+        console.log('[Wingman] Updating home screen for user:', window._user.uid);
         const userDoc = await getDoc(doc(db, 'users', window._user.uid));
         if (userDoc.exists()) {
           const data = userDoc.data();
+          console.log('[Wingman] User subscription status:', data.subscription?.status);
           const today = new Date().toISOString().split('T')[0];
           const todayCount = data.usage?.date === today ? (data.usage?.count || 0) : 0;
           const remaining = 5 - todayCount;
           const badge = document.getElementById('home-free-badge');
           if (data.subscription?.status === 'active') {
+            console.log('[Wingman] User is Pro');
             badge.textContent = '✨ Pro Member';
             badge.style.background = 'rgba(200, 169, 126, 0.2)';
           } else {
+            console.log('[Wingman] User is Free, remaining messages today:', remaining);
             badge.textContent = `📊 ${remaining} uses left today`;
           }
         }
       } catch (err) {
-        console.error('Error updating home:', err);
+        console.error('[Wingman] Error updating home screen:', err);
       }
     };
 
     window.updateAccountScreen = async () => {
-      if (!window._user) return;
+      if (!window._user) {
+        console.log('[Wingman] updateAccountScreen: no user');
+        return;
+      }
       try {
+        console.log('[Wingman] Loading account screen data for:', window._user.uid);
         document.getElementById('account-email').textContent = window._user.email || '—';
         const userDoc = await getDoc(doc(db, 'users', window._user.uid));
         if (userDoc.exists()) {
           const data = userDoc.data();
           const sub = data.subscription || {};
+          console.log('[Wingman] Subscription status:', sub.status);
           document.getElementById('account-status').textContent = sub.status === 'active' ? '✅ Pro' : '📦 Free';
           const today = new Date().toISOString().split('T')[0];
           const todayCount = data.usage?.date === today ? (data.usage?.count || 0) : 0;
+          console.log('[Wingman] Usage today:', todayCount);
           document.getElementById('account-usage').textContent = `${todayCount} / 5 used today`;
           const portalBtn = document.getElementById('portal-btn');
           if (sub.status === 'active') {
@@ -791,23 +950,27 @@
           }
         }
       } catch (err) {
-        console.error('Error updating account:', err);
+        console.error('[Wingman] Error updating account:', err);
       }
     };
 
     // Auth state listener
     onAuthStateChanged(auth, async (user) => {
       if (user) {
+        console.log('[Wingman] Auth state changed: user logged in', user.uid);
         window._user = user;
         try {
+          console.log('[Wingman] Fetching user doc from Firestore:', user.uid);
           const userDoc = await getDoc(doc(db, 'users', user.uid));
           window._userData = userDoc.exists() ? userDoc.data() : {};
+          console.log('[Wingman] User data loaded:', window._userData);
         } catch (err) {
-          console.error('Error loading user data:', err);
+          console.error('[Wingman] Error loading user data:', err);
         }
         updateHomeScreen();
         window.show('screen-home');
       } else {
+        console.log('[Wingman] Auth state changed: user logged out');
         window._user = null;
         window._userData = null;
         window.show('screen-auth');
@@ -818,7 +981,10 @@
   <script>
     // Register service worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration failed:', err));
+      console.log('[Wingman] Registering service worker');
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('[Wingman] Service worker registered:', reg.scope))
+        .catch(err => console.error('[Wingman] SW registration failed:', err));
     }
   </script>
 </body>
