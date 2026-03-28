@@ -359,60 +359,12 @@
       font-size: 14px;
       border-left: 3px solid #4cd964;
     }
-      color: #0a0a0f;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      white-space: nowrap;
-    }
-
-    .install-action-btn:hover {
-      background-color: #d9b88f;
-    }
-
-    .install-action-btn:active {
-      transform: scale(0.98);
-    }
-
-    .install-dismiss-btn {
-      background: none;
-      border: none;
-      color: #c9a84c;
-      opacity: 0.6;
-      cursor: pointer;
-      font-size: 18px;
-      padding: 4px 8px;
-      transition: opacity 0.2s ease;
-    }
-
-    .install-dismiss-btn:hover {
-      opacity: 1;
-    }
 
     /* Responsive */
     @media (max-width: 480px) {
       h1 { font-size: 28px; }
       h2 { font-size: 20px; }
       button { font-size: 14px; padding: 10px 16px; }
-
-      #install-prompt-banner {
-        padding: 12px;
-        padding-bottom: calc(12px + env(safe-area-inset-bottom));
-      }
-
-      .install-prompt-content {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-      }
-
-      .install-action-btn {
-        width: 100%;
-      }
     }
   </style>
 </head>
@@ -429,7 +381,6 @@
   <div id="screen-auth" class="screen">
     <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
       <img src="/icons/icon-192.png" alt="Wingman" style="width: 120px; height: 120px; margin-bottom: 24px;" />
-      <h1 style="margin-bottom: 8px;">Wingman</h1>
       <p style="margin-bottom: 40px; color: #666;">AI dating message coach</p>
       
       <div style="width: 100%; max-width: 320px;">
@@ -560,66 +511,11 @@
         <button id="portal-btn" style="width: 100%; display: none;" onclick="openBillingPortal()">
           Manage Subscription
         </button>
-        <button class="secondary" style="width: 100%; font-size: 14px;" onclick="show('screen-install-guide'); logEvent(analytics, 'view_install_guide', {})">How to Install App</button>
         <button class="secondary" style="width: 100%; font-size: 14px;" onclick="show('screen-privacy')">Privacy Policy</button>
         <button class="secondary" style="width: 100%; font-size: 14px;" onclick="show('screen-terms')">Terms of Service</button>
         <button class="secondary" style="width: 100%;" onclick="signOut()">Sign Out</button>
         <button class="secondary" style="width: 100%;" onclick="show('screen-home')">← Back</button>
       </div>
-    </div>
-  </div>
-
-  <!-- Screen: Install Guide -->
-  <div id="screen-install-guide" class="screen">
-    <div style="flex: 1; overflow-y: auto;">
-      <h2 style="margin-bottom: 24px;">Save Wingman to Your Home Screen</h2>
-
-      <!-- iOS Instructions -->
-      <div style="margin-bottom: 32px;">
-        <h3 style="color: #c9a84c; margin-bottom: 12px;">📱 iPhone / iPad</h3>
-        <ol style="margin: 0; padding-left: 20px; line-height: 1.8;">
-          <li>Open Wingman in Safari</li>
-          <li>Tap the Share button (arrow pointing up from box)</li>
-          <li>Scroll down and tap "Add to Home Screen"</li>
-          <li>Customize the name if you want</li>
-          <li>Tap "Add" to confirm</li>
-        </ol>
-        <p style="font-size: 12px; color: #888; margin-top: 8px;">✓ You'll see Wingman appear on your home screen like a native app</p>
-      </div>
-
-      <!-- Android Instructions -->
-      <div style="margin-bottom: 32px;">
-        <h3 style="color: #c9a84c; margin-bottom: 12px;">🤖 Android Chrome</h3>
-        <ol style="margin: 0; padding-left: 20px; line-height: 1.8;">
-          <li>Open Wingman in Chrome</li>
-          <li>Tap the menu button (three dots)</li>
-          <li>Tap "Install app" or "Add to Home screen"</li>
-          <li>Tap "Install" to confirm</li>
-        </ol>
-        <p style="font-size: 12px; color: #888; margin-top: 8px;">✓ Wingman will appear as an icon on your home screen</p>
-      </div>
-
-      <!-- Android Firefox -->
-      <div style="margin-bottom: 32px;">
-        <h3 style="color: #c9a84c; margin-bottom: 12px;">🦊 Android Firefox</h3>
-        <ol style="margin: 0; padding-left: 20px; line-height: 1.8;">
-          <li>Hold down on the Wingman tab</li>
-          <li>Select "Add to Home screen"</li>
-          <li>Confirm the shortcut</li>
-        </ol>
-        <p style="font-size: 12px; color: #888; margin-top: 8px;">✓ Icon will be added to your home screen</p>
-      </div>
-
-      <!-- Desktop Instructions -->
-      <div style="margin-bottom: 32px;">
-        <h3 style="color: #c9a84c; margin-bottom: 12px;">💻 Desktop (Optional)</h3>
-        <p style="margin: 0; line-height: 1.8;">Most desktop browsers support app installation. Look for the install icon (usually in the address bar) and click "Install Wingman"</p>
-      </div>
-
-      <p style="font-size: 12px; color: #666; text-align: center; margin-top: 24px;">After installing, Wingman will work just like a native app with faster loading and offline support.</p>
-    </div>
-    <div class="action-bar">
-      <button class="secondary" style="width: 100%;" onclick="show('screen-account')">← Back</button>
     </div>
   </div>
 
@@ -953,11 +849,7 @@ Communication style to maintain: observational, grounded, warm, lightly playful,
 
 STAGE CONTEXT: The user is at the "${window._selectedStage}" stage. ${stageContext[window._selectedStage] || ''}
 
-CONVERSATION CONTEXT:
-${window._screenshotBase64 ? `A screenshot of the conversation has been provided below. In this screenshot:
-- Messages on the RIGHT side are from the USER (the person asking for help)
-- Messages on the LEFT side are from the person they're messaging back to
-- You're generating a response that the USER should send next (which would appear on the RIGHT)` : `The user is describing the conversation context directly. Generate a response for what THEY should say.`}
+${window._screenshotBase64 ? 'They provided a screenshot of their conversation - analyze the tone, energy, and flow carefully.' : 'Use the context they\'re providing to understand the conversation dynamic.'}
 
 WHAT THEY WANT TO SAY: ${message}
 
@@ -974,15 +866,9 @@ Each option should be 1-3 sentences max. After the 4 options, include:
 ✓ Ask a question OR make a statement
 ✓ Slow down OR advance
 
-CRITICAL REQUIREMENTS - DO NOT IGNORE:
-1. Return ONLY a JSON object - NOTHING else
-2. NO markdown code blocks (NO ``` symbols)
-3. NO explanatory text before or after
-4. NO line breaks outside the JSON
-5. Start with { and end with }
-6. Every response MUST be valid, parseable JSON
+CRITICAL: Return ONLY valid JSON with no markdown code blocks, no explanations, no extra text.
 
-EXACT JSON OUTPUT (copy this structure exactly):
+Return EXACTLY this JSON structure:
 {
   "A": "your response here",
   "B": "your response here",
@@ -992,6 +878,7 @@ EXACT JSON OUTPUT (copy this structure exactly):
   "approach": "question or statement",
   "pacing": "slow down or advance"
 }`;
+
 
           
           // Build message content with screenshot if available
@@ -1098,11 +985,8 @@ EXACT JSON OUTPUT (copy this structure exactly):
 
         let content = data.content[0].text;
         
-        // Aggressively clean markdown code blocks from any position
-        content = content.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-        
-        // Also remove common markdown patterns
-        content = content.replace(/^[\s\n]*```/gm, '').replace(/```[\s\n]*$/gm, '');
+        // Clean markdown code blocks and trim
+        content = content.replace(/^```[\w]*\n?/gm, '').replace(/```$/gm, '').trim();
         
         // Enhanced JSON extraction with multiple strategies
         let parsed = null;
@@ -1123,20 +1007,12 @@ EXACT JSON OUTPUT (copy this structure exactly):
               parsed = JSON.parse(extracted);
             } catch (e2) {
               
-              // Strategy 3: Try regex match for nested objects (greedy)
+              // Strategy 3: Try regex match for nested objects
               const jsonMatch = content.match(/\{[\s\S]*\}/);
               if (jsonMatch) {
                 try {
                   parsed = JSON.parse(jsonMatch[0]);
                 } catch (e3) {
-                  // Strategy 4: Last resort - try to fix common JSON issues
-                  let sanitized = jsonMatch[0];
-                  // Replace smart quotes with regular quotes
-                  sanitized = sanitized.replace(/[""]/g, '"').replace(/['']/g, "'");
-                  try {
-                    parsed = JSON.parse(sanitized);
-                  } catch (e4) {
-                  }
                 }
               }
             }
@@ -1201,23 +1077,10 @@ EXACT JSON OUTPUT (copy this structure exactly):
 
       } catch (e) {
         console.error('[Wingman] Display error:', e.message);
-        
-        // Log what we actually received for debugging
-        if (data && data.content && data.content[0]) {
-          const receivedText = data.content[0].text;
-          console.error('[Wingman] Received text:', receivedText.substring(0, 200));
-          window.logErrorToFirestore(`JSON extraction failed: ${e.message}. Received: ${receivedText.substring(0, 500)}`, e.stack, {
-            context: 'displayResults',
-            receivedLength: receivedText.length,
-            firstChars: receivedText.substring(0, 50),
-          });
-        } else {
-          window.logErrorToFirestore(`Error displaying results: ${e.message}`, e.stack, {
-            context: 'displayResults',
-            errorCode: e.code,
-          });
-        }
-        
+        window.logErrorToFirestore(`Error displaying results: ${e.message}`, e.stack, {
+          context: 'displayResults',
+          errorCode: e.code,
+        });
         const bubble = document.createElement('div');
         bubble.className = 'message-bubble';
         bubble.innerHTML = `<strong>Error</strong><br>${e.message}. Please try again.`;
