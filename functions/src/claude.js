@@ -6,7 +6,7 @@ const { incrementUsage } = require('./lib/firestore');
 
 /**
  * Claude API proxy function
- * HTTP endpoint with raw body parsing for preflight + CORS
+ * HTTP endpoint with proper body parsing + CORS
  */
 const claude = functions
   .runWith({ timeoutSeconds: 60, memory: '512MB' })
@@ -45,8 +45,19 @@ const claude = functions
         return res.status(402).json({ error: 'Daily limit exceeded' });
       }
 
+      // Parse request body if it's a string
+      let body = req.body;
+      if (typeof body === 'string') {
+        try {
+          body = JSON.parse(body);
+        } catch (parseErr) {
+          functions.logger.error('Body parse error:', parseErr);
+          return res.status(400).json({ error: 'Invalid JSON in request body' });
+        }
+      }
+
       // Validate request data
-      const { messages } = req.body;
+      const { messages } = body;
       if (!messages || !Array.isArray(messages)) {
         return res.status(400).json({ error: 'messages array required' });
       }
