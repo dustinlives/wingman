@@ -438,7 +438,8 @@
       <!-- Results will be inserted here -->
     </div>
     <div class="action-bar">
-      <button onclick="show('screen-home')">← Back</button>
+      <button onclick="window.nextMessage()" style="flex: 1;">Next Message →</button>
+      <button class="secondary" onclick="show('screen-home')" style="flex: 1;">← Back</button>
     </div>
   </div>
 
@@ -855,6 +856,12 @@ Return EXACTLY this JSON structure:
       window._screenshotBase64 = null;
       document.querySelectorAll('.stage-btn').forEach(btn => btn.classList.remove('selected'));
       document.getElementById('home-error').style.display = 'none';
+    };
+
+    window.nextMessage = () => {
+      console.log('[Wingman] Next message - clearing form and returning to home');
+      window.clearForm();
+      window.show('screen-home');
     };
 
     window.upgradeToSubscription = async () => {
