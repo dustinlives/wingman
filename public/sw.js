@@ -1,4 +1,4 @@
-const CACHE = 'wingman-v3';
+const CACHE = 'wingman-v4';
 const SHELL = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', e => {
@@ -16,7 +16,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   // Never cache: API calls, external services
   const url = e.request.url;
-  if (url.includes('anthropic.com') || url.includes('stripe.com') ||
+  if (url.includes('/api/') || url.includes('anthropic.com') || url.includes('stripe.com') ||
       url.includes('firebaseapp.com') || url.includes('googleapis.com') ||
       url.includes('cloudfunctions.net') || url.includes('gstatic.com')) return;
 

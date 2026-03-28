@@ -514,7 +514,7 @@
     const functions = getFunctions(app);
 
     // Version: used for cache busting - update on each deployment
-    const APP_VERSION = '3.1.0-oncall-fixed';
+    const APP_VERSION = '3.1.9-sw-api-bypass';
     console.log('[Wingman] App version:', APP_VERSION);
 
     // Global state
@@ -625,6 +625,7 @@
         const token = await auth.currentUser.getIdToken();
         const userPrompt = `You are a dating message coach. The user is at the "${window._selectedStage}" stage of a conversation on a dating app. ${window._screenshotBase64 ? 'They provided a screenshot of their conversation.' : ''} They want help with: "${message}"\n\nProvide exactly 3 different message options that are compelling, authentic, and match the conversation stage. Format as a JSON array with "message" field.`;
 
+        console.log('[Wingman] Calling /api/claude with token');
         const response = await fetch(`/api/claude`, {
           method: 'POST',
           headers: {
@@ -636,21 +637,27 @@
           })
         });
 
+        console.log('[Wingman] Response status:', response.status);
+
         if (response.status === 402) {
+          console.log('[Wingman] Daily limit exceeded (402)');
           window.show('screen-paywall');
           return;
         }
 
         if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
+          const errorText = await response.text();
+          console.error('[Wingman] API error:', response.status, errorText);
+          throw new Error(`API error: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
+        console.log('[Wingman] Response data received:', data);
         displayResults(data);
         window.show('screen-results');
         updateHomeScreen();
       } catch (err) {
-        console.error('Error generating messages:', err);
+        console.error('[Wingman] Error generating messages:', err);
         alert('Error generating messages: ' + err.message);
         window.show('screen-home');
       }
