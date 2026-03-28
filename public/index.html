@@ -922,16 +922,81 @@
         try {
           const token = await auth.currentUser.getIdToken();
           
+          const stageContext = {
+            'Interest': 'The goal is to stand out and spark curiosity. Focus on being genuinely interesting, showing you\'ve read their profile, and creating intrigue that makes them want to respond.',
+            'Attraction': 'Build on initial interest. Create moments that make them smile or feel something. Show personality, wit, and confidence without trying too hard.',
+            'Rapport': 'Deepen the connection. Find common ground, share small vulnerabilities, make them feel understood. Move toward genuine conversation rather than impressing.',
+            'Desire': 'Create emotional and physical attraction. Be more direct about interest, suggest meeting, build anticipation. Show you\'re thinking about them.',
+            'Momentum': 'Keep the energy moving forward. Suggest specific plans, build on previous conversations, show consistent interest. Eliminate uncertainty and move toward real-world connection.',
+            'Close': 'Finalize logistics and build confidence. Be direct about meeting, remove barriers, show genuine interest in the real person. This is about follow-through and authentic intention.'
+          };
+
+          const userPrompt = `You are a conversational strategist helping someone communicate with calm confidence, emotional intelligence, and subtle playful tension on dating apps and in early romantic conversations.
+
+Communication style to maintain: observational, grounded, warm, lightly playful, quietly decisive. No try-hard energy, no interview-style questions, no validation seeking, no long philosophical texts.
+
+STAGE CONTEXT: The user is at the "${window._selectedStage}" stage. ${stageContext[window._selectedStage] || ''}
+
+CONVERSATION CONTEXT:
+${window._screenshotBase64 ? `A screenshot of the conversation has been provided below. In this screenshot:
+- Messages on the RIGHT side are from the USER (the person asking for help)
+- Messages on the LEFT side are from the person they're messaging back to
+- You're generating a response that the USER should send next (which would appear on the RIGHT)` : `The user is describing the conversation context directly. Generate a response for what THEY should say.`}
+
+WHAT THEY WANT TO SAY: ${message}
+
+Generate exactly 4 response options labeled:
+
+A — Most Natural
+B — Slightly Playful  
+C — Warm & Direct
+D — Momentum Forward
+
+Each option should be 1-3 sentences max. After the 4 options, include:
+
+✓ Momentum strategy (one line)
+✓ Ask a question OR make a statement
+✓ Slow down OR advance
+
+CRITICAL: Return ONLY valid JSON with no markdown code blocks, no explanations, no extra text.
+
+Return EXACTLY this JSON structure:
+{
+  "A": "your response here",
+  "B": "your response here",
+  "C": "your response here",
+  "D": "your response here",
+  "strategy": "momentum strategy here",
+  "approach": "question or statement",
+  "pacing": "slow down or advance"
+}`;
+
+          
+          // Build message content with screenshot if available
+          let messageContent = userPrompt;
+          if (window._screenshotBase64) {
+            // Send screenshot to Claude for analysis
+            messageContent = [
+              {
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: 'image/png',
+                  data: window._screenshotBase64.split(',')[1] // Remove data:image/png;base64, prefix
+                }
+              },
+              {
+                type: 'text',
+                text: userPrompt
+              }
+            ];
+
+          }
+          
           // Create abort controller for timeout (90 seconds for slow mobile)
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 90000);
           
-          // Prepare screenshot data if available (remove data:image/png;base64, prefix)
-          let screenshotBase64 = null;
-          if (window._screenshotBase64) {
-            screenshotBase64 = window._screenshotBase64.split(',')[1];
-          }
-
           const response = await fetch(`/api/claude`, {
             method: 'POST',
             headers: {
@@ -939,9 +1004,7 @@
               'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
-              message: message,
-              stage: window._selectedStage,
-              screenshotBase64: screenshotBase64
+              messages: [{ role: 'user', content: messageContent }]
             }),
             signal: controller.signal
           });
