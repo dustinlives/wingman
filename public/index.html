@@ -1078,12 +1078,16 @@ Return EXACTLY this JSON structure:
             
             // Add all images first
             window._screenshots.forEach((img) => {
+              // Determine media type based on compression
+              const mediaType = img.compressed ? 'image/jpeg' : 'image/png';
+              const base64Data = img.base64.split(',')[1]; // Remove data:image/...;base64, prefix
+              
               messageContent.push({
                 type: 'image',
                 source: {
                   type: 'base64',
-                  media_type: 'image/png',
-                  data: img.base64.split(',')[1] // Remove data:image/png;base64, prefix
+                  media_type: mediaType,
+                  data: base64Data
                 }
               });
             });
