@@ -829,6 +829,48 @@
     // Initialize images array
     window._screenshots = [];
 
+    // Compress image function
+    window.compressImage = (base64, callback) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let ctx = canvas.getContext('2d');
+        
+        // Start with original dimensions
+        let { width, height } = img;
+        
+        // If image is too large, scale it down
+        if (img.width > 1920 || img.height > 1920) {
+          const max = 1920;
+          if (width > height) {
+            height = (height * max) / width;
+            width = max;
+          } else {
+            width = (width * max) / height;
+            height = max;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Try different quality levels until we get under 5MB
+        let quality = 0.85;
+        let compressed = canvas.toDataURL('image/jpeg', quality);
+        let iterations = 0;
+        
+        while (compressed.length > 5 * 1024 * 1024 && quality > 0.3 && iterations < 5) {
+          quality -= 0.1;
+          compressed = canvas.toDataURL('image/jpeg', quality);
+          iterations++;
+        }
+        
+        callback(compressed);
+      };
+      img.src = base64;
+    };
+
     // File upload
     window.handleFileUpload = (event) => {
       const files = Array.from(event.target.files);
@@ -847,33 +889,60 @@
       let skippedFiles = [];
 
       files.forEach((file) => {
-        // Check file size
-        if (file.size > MAX_IMAGE_SIZE) {
-          skippedFiles.push(`${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
-          filesProcessed++;
-          return;
-        }
-
         const reader = new FileReader();
         reader.onload = (e) => {
-          window._screenshots.push({
-            base64: e.target.result,
-            name: file.name,
-            size: file.size
-          });
-          filesProcessed++;
+          const originalSize = file.size;
+          
+          // Compress image if needed
+          if (originalSize > MAX_IMAGE_SIZE * 0.8) {
+            // Image is large, compress it
+            window.compressImage(e.target.result, (compressed) => {
+              if (compressed.length > MAX_IMAGE_SIZE) {
+                skippedFiles.push(`${file.name} (too large even after compression)`);
+              } else {
+                window._screenshots.push({
+                  base64: compressed,
+                  name: file.name,
+                  size: compressed.length,
+                  original_size: originalSize,
+                  compressed: true
+                });
+              }
+              filesProcessed++;
+              
+              if (filesProcessed === files.length) {
+                if (skippedFiles.length > 0) {
+                  alert('⚠️ Could not compress:\n' + skippedFiles.join('\n'));
+                }
+                if (window._screenshots.length > 0) {
+                  logEvent(analytics, 'upload_screenshots', { 
+                    num_files: files.length - skippedFiles.length,
+                    total_files: window._screenshots.length,
+                    skipped_files: skippedFiles.length
+                  });
+                  updateImagePreview();
+                }
+              }
+            });
+          } else {
+            // Small image, use as-is
+            window._screenshots.push({
+              base64: e.target.result,
+              name: file.name,
+              size: file.size,
+              compressed: false
+            });
+            filesProcessed++;
 
-          if (filesProcessed === files.length) {
-            if (skippedFiles.length > 0) {
-              alert('⚠️ Some images were too large (max 5MB):\n' + skippedFiles.join('\n') + '\n\n' + (window._screenshots.length > 0 ? window._screenshots.length + ' image(s) uploaded' : 'No images uploaded'));
-            }
-            if (window._screenshots.length > 0) {
-              logEvent(analytics, 'upload_screenshots', { 
-                num_files: files.length - skippedFiles.length,
-                total_files: window._screenshots.length,
-                skipped_files: skippedFiles.length
-              });
-              updateImagePreview();
+            if (filesProcessed === files.length) {
+              if (window._screenshots.length > 0) {
+                logEvent(analytics, 'upload_screenshots', { 
+                  num_files: files.length,
+                  total_files: window._screenshots.length,
+                  skipped_files: 0
+                });
+                updateImagePreview();
+              }
             }
           }
         };
