@@ -842,8 +842,18 @@
         return;
       }
 
+      const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
       let filesProcessed = 0;
+      let skippedFiles = [];
+
       files.forEach((file) => {
+        // Check file size
+        if (file.size > MAX_IMAGE_SIZE) {
+          skippedFiles.push(`${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+          filesProcessed++;
+          return;
+        }
+
         const reader = new FileReader();
         reader.onload = (e) => {
           window._screenshots.push({
@@ -854,15 +864,22 @@
           filesProcessed++;
 
           if (filesProcessed === files.length) {
-            logEvent(analytics, 'upload_screenshots', { 
-              num_files: files.length,
-              total_files: window._screenshots.length
-            });
-            updateImagePreview();
+            if (skippedFiles.length > 0) {
+              alert('⚠️ Some images were too large (max 5MB):\n' + skippedFiles.join('\n') + '\n\n' + (window._screenshots.length > 0 ? window._screenshots.length + ' image(s) uploaded' : 'No images uploaded'));
+            }
+            if (window._screenshots.length > 0) {
+              logEvent(analytics, 'upload_screenshots', { 
+                num_files: files.length - skippedFiles.length,
+                total_files: window._screenshots.length,
+                skipped_files: skippedFiles.length
+              });
+              updateImagePreview();
+            }
           }
         };
         reader.onerror = () => {
           console.error('[Wingman] File read error for:', file.name);
+          filesProcessed++;
         };
         reader.readAsDataURL(file);
       });
