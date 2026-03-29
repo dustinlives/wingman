@@ -197,6 +197,19 @@
       background-color: rgba(200, 169, 126, 0.1);
     }
 
+    #image-preview {
+      background-color: rgba(200, 169, 126, 0.05);
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(200, 169, 126, 0.2);
+    }
+
+    #image-thumbnails {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
     /* Messages / Bubbles */
     .message-bubble {
       background-color: #1a1a1f;
@@ -425,11 +438,17 @@
       </div>
 
       <!-- Screenshot upload -->
-      <label style="display: block; margin-bottom: 12px; color: #c8a97e; font-weight: 600; font-size: 12px; text-transform: uppercase;">Screenshot (optional)</label>
+      <label style="display: block; margin-bottom: 12px; color: #c8a97e; font-weight: 600; font-size: 12px; text-transform: uppercase;">Images (optional, up to 5)</label>
       <div class="file-upload" id="file-upload" onclick="document.getElementById('screenshot-input').click()">
         <p id="file-label" style="margin: 0;">📸 Tap to upload</p>
       </div>
-      <input type="file" id="screenshot-input" accept="image/*" onchange="handleFileUpload(event)">
+      <div id="image-preview" style="display: none; margin-bottom: 16px;">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;" id="image-thumbnails"></div>
+        <button class="secondary" style="width: 100%; margin-top: 8px; font-size: 12px;" onclick="clearImages()">
+          Clear Images
+        </button>
+      </div>
+      <input type="file" id="screenshot-input" accept="image/*" multiple onchange="handleFileUpload(event)">
 
       <!-- Message input -->
       <label style="display: block; margin-bottom: 12px; color: #c8a97e; font-weight: 600; font-size: 12px; text-transform: uppercase;">What do you want to say?</label>
@@ -788,25 +807,90 @@
       event.target.classList.add('selected');
     };
 
+    // Initialize images array
+    window._screenshots = [];
+
     // File upload
     window.handleFileUpload = (event) => {
-      const file = event.target.files[0];
-      if (!file) {
-
+      const files = Array.from(event.target.files);
+      if (!files.length) {
         return;
       }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        window._screenshotBase64 = e.target.result;
-        logEvent(analytics, 'upload_screenshot', { file_size_kb: Math.round(file.size / 1024) });
-        document.getElementById('file-upload').classList.add('active');
-        document.getElementById('file-label').textContent = '✓ Screenshot uploaded';
 
-      };
-      reader.onerror = () => {
-        console.error('[Wingman] File read error');
-      };
-      reader.readAsDataURL(file);
+      // Check total images won't exceed 5
+      if (window._screenshots.length + files.length > 5) {
+        alert('Maximum 5 images allowed. You have ' + window._screenshots.length + ' images already uploaded.');
+        return;
+      }
+
+      let filesProcessed = 0;
+      files.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          window._screenshots.push({
+            base64: e.target.result,
+            name: file.name,
+            size: file.size
+          });
+          filesProcessed++;
+
+          if (filesProcessed === files.length) {
+            logEvent(analytics, 'upload_screenshots', { 
+              num_files: files.length,
+              total_files: window._screenshots.length
+            });
+            updateImagePreview();
+          }
+        };
+        reader.onerror = () => {
+          console.error('[Wingman] File read error for:', file.name);
+        };
+        reader.readAsDataURL(file);
+      });
+
+      // Reset file input
+      event.target.value = '';
+    };
+
+    // Update image preview display
+    window.updateImagePreview = () => {
+      const preview = document.getElementById('image-preview');
+      const thumbnails = document.getElementById('image-thumbnails');
+      thumbnails.innerHTML = '';
+
+      if (window._screenshots.length === 0) {
+        preview.style.display = 'none';
+        document.getElementById('file-upload').classList.remove('active');
+        document.getElementById('file-label').textContent = '📸 Tap to upload';
+        return;
+      }
+
+      preview.style.display = 'block';
+      document.getElementById('file-upload').classList.add('active');
+      document.getElementById('file-label').textContent = `✓ ${window._screenshots.length} image${window._screenshots.length !== 1 ? 's' : ''} uploaded`;
+
+      window._screenshots.forEach((img, idx) => {
+        const thumb = document.createElement('div');
+        thumb.style.cssText = 'position: relative; width: 60px; height: 60px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(200, 169, 126, 0.3); cursor: pointer;';
+        thumb.innerHTML = `
+          <img src="${img.base64}" style="width: 100%; height: 100%; object-fit: cover;">
+          <button style="position: absolute; top: 0; right: 0; width: 20px; height: 20px; padding: 0; margin: 4px; background: rgba(0,0,0,0.7); border: none; border-radius: 4px; color: white; font-size: 12px; cursor: pointer; line-height: 1;" onclick="removeImage(${idx})">×</button>
+        `;
+        thumbnails.appendChild(thumb);
+      });
+    };
+
+    // Remove specific image
+    window.removeImage = (index) => {
+      window._screenshots.splice(index, 1);
+      updateImagePreview();
+    };
+
+    // Clear all images
+    window.clearImages = () => {
+      window._screenshots = [];
+      document.getElementById('screenshot-input').value = '';
+      updateImagePreview();
     };
 
     // Generate messages
@@ -849,7 +933,7 @@ Communication style to maintain: observational, grounded, warm, lightly playful,
 
 STAGE CONTEXT: The user is at the "${window._selectedStage}" stage. ${stageContext[window._selectedStage] || ''}
 
-${window._screenshotBase64 ? 'They provided a screenshot of their conversation - analyze the tone, energy, and flow carefully.' : 'Use the context they\'re providing to understand the conversation dynamic.'}
+${window._screenshots.length > 0 ? 'They provided ' + window._screenshots.length + ' screenshot' + (window._screenshots.length !== 1 ? 's' : '') + ' of their conversation - analyze the tone, energy, and flow carefully.' : 'Use the context they\'re providing to understand the conversation dynamic.'}
 
 WHAT THEY WANT TO SAY: ${message}
 
@@ -881,25 +965,29 @@ Return EXACTLY this JSON structure:
 
 
           
-          // Build message content with screenshot if available
+          // Build message content with screenshots if available
           let messageContent = userPrompt;
-          if (window._screenshotBase64) {
-            // Send screenshot to Claude for analysis
-            messageContent = [
-              {
+          if (window._screenshots.length > 0) {
+            // Send all screenshots to Claude for analysis
+            messageContent = [];
+            
+            // Add all images first
+            window._screenshots.forEach((img) => {
+              messageContent.push({
                 type: 'image',
                 source: {
                   type: 'base64',
                   media_type: 'image/png',
-                  data: window._screenshotBase64.split(',')[1] // Remove data:image/png;base64, prefix
+                  data: img.base64.split(',')[1] // Remove data:image/png;base64, prefix
                 }
-              },
-              {
-                type: 'text',
-                text: userPrompt
-              }
-            ];
-
+              });
+            });
+            
+            // Add text prompt last
+            messageContent.push({
+              type: 'text',
+              text: userPrompt
+            });
           }
           
           // Create abort controller for timeout (90 seconds for slow mobile)
@@ -934,7 +1022,8 @@ Return EXACTLY this JSON structure:
           const data = await response.json();
           logEvent(analytics, 'generate_message', {
             stage: window._selectedStage,
-            screenshot_included: !!window._screenshotBase64,
+            screenshots_included: window._screenshots.length,
+            num_screenshots: window._screenshots.length,
             attempt: attempt
           });
           displayResults(data);
@@ -1091,10 +1180,12 @@ Return EXACTLY this JSON structure:
     window.clearForm = () => {
       document.getElementById('message-input').value = '';
       document.getElementById('screenshot-input').value = '';
+      window._screenshots = [];
+      document.getElementById('image-preview').style.display = 'none';
+      document.getElementById('image-thumbnails').innerHTML = '';
       document.getElementById('file-upload').classList.remove('active');
       document.getElementById('file-label').textContent = '📸 Tap to upload';
       window._selectedStage = null;
-      window._screenshotBase64 = null;
       document.querySelectorAll('.stage-btn').forEach(btn => btn.classList.remove('selected'));
       document.getElementById('home-error').style.display = 'none';
     };

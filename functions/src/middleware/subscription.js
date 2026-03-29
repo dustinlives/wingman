@@ -1,7 +1,7 @@
 const admin = require('firebase-admin');
 
 const FREE_DAILY_LIMIT = 5;
-const TEST_USERS = []; // Test users get unlimited access
+const TEST_USERS = ['norman.dustin@gmail.com']; // Test users get unlimited access
 
 /**
  * Check if user has remaining free uses or is a paid subscriber
