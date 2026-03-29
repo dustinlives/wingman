@@ -660,6 +660,25 @@
     const functions = getFunctions(app);
     const analytics = getAnalytics(app);
 
+    // Cache clearing function
+    window.clearLocalCache = async () => {
+      try {
+        // Clear caches from service worker
+        if ('caches' in window) {
+          const cacheNames = await caches.keys();
+          await Promise.all(cacheNames.map(name => caches.delete(name)));
+          console.log('[Wingman] Local cache cleared');
+        }
+      } catch (err) {
+        console.error('[Wingman] Error clearing cache:', err);
+      }
+    };
+
+    // Clear cache on page load
+    window.addEventListener('load', () => {
+      window.clearLocalCache();
+    });
+
     // Version: used for cache busting - update on each deployment
     const APP_VERSION = '3.1.9-sw-api-bypass';
 
@@ -1315,6 +1334,9 @@ Return EXACTLY this JSON structure:
 
     // Auth state listener
     onAuthStateChanged(auth, async (user) => {
+      // Clear cache on auth state change
+      await window.clearLocalCache();
+      
       if (user) {
         window._user = user;
         try {
